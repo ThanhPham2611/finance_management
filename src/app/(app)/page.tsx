@@ -10,6 +10,7 @@ import { listRecentTransactions, listTransactionsSince, toYMD, weekdayShort } fr
 import { applyAutoRollovers, getPendingLeftovers, previousMonthLabel } from "@/lib/queries/leftover";
 import { LeftoverBanner } from "@/components/leftover-banner";
 import { computeStreak, getRecentMonthsPerformance } from "@/lib/queries/gamification";
+import { ProductTour } from "@/components/product-tour";
 
 function daysLeftInMonth(): number {
   const now = vnNow();
@@ -22,7 +23,8 @@ function periodLabel(): string {
   return `Tháng ${now.getMonth() + 1}, ${now.getFullYear()}`;
 }
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: PageProps<"/">) {
+  const { tour } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -36,15 +38,38 @@ export default async function DashboardPage() {
   // can hoi — chay truoc listJarsWithSpent de ngan sach moi cong duoc phan
   // anh ngay trong lan tai trang nay. Loi (vd chua chay migration 007) bi
   // nuot de khong lam sap Dashboard — chi la tinh nang phu.
-  await applyAutoRollovers(supabase, user.id).catch(() => {});
+  const jarsAfterRollover = applyAutoRollovers(supabase, user.id)
+    .catch(() => {})
+    .then(() => listJarsWithSpent(supabase));
 
-  const jars = await listJarsWithSpent(supabase);
-  const pendingLeftovers = await getPendingLeftovers(supabase, user.id).catch(() => []);
-  // Streak gamification — chi doc, khong bao gio lam sap Dashboard neu loi
-  // (vd chua chay migration_008, hoac chua tung chia luong thang nao).
-  const streak = await getRecentMonthsPerformance(supabase, user.id, 12)
-    .then(computeStreak)
-    .catch(() => 0);
+  // 7 ngay gan nhat, gop theo ngay tu giao dich that.
+  const today = vnNow();
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(today.getDate() - 6);
+
+  // Cac query doc doc lap nhau — chay song song thay vi noi duoi (moi lan
+  // await la 1 round-trip toi Supabase).
+  const [jars, pendingLeftovers, streak, last7, recent, hasSeenTour] = await Promise.all([
+    jarsAfterRollover,
+    getPendingLeftovers(supabase, user.id).catch(() => []),
+    // Streak gamification — chi doc, khong bao gio lam sap Dashboard neu loi
+    // (vd chua chay migration_008, hoac chua tung chia luong thang nao).
+    getRecentMonthsPerformance(supabase, user.id, 12)
+      .then(computeStreak)
+      .catch(() => 0),
+    listTransactionsSince(supabase, toYMD(sevenDaysAgo)),
+    listRecentTransactions(supabase, 4),
+    // Product tour — nuot loi neu chua chay migration_010, coi nhu da xem
+    // (khong lam phien user bang tour khi tinh nang phu nay bi loi).
+    (async () => {
+      try {
+        const { data } = await supabase.from("profiles").select("has_seen_tour").eq("id", user.id).maybeSingle();
+        return data?.has_seen_tour ?? true;
+      } catch {
+        return true;
+      }
+    })(),
+  ]);
   const personalJars = jars.filter((j) => !j.isShared);
   const familyJars = jars.filter((j) => j.isShared);
   const displayJars = familyJars.length > 0 ? [...personalJars, aggregateFamilyJar(familyJars)] : personalJars;
@@ -65,11 +90,6 @@ export default async function DashboardPage() {
     .filter(Boolean)
     .join(" · ");
 
-  // 7 ngay gan nhat, gop theo ngay tu giao dich that.
-  const today = vnNow();
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(today.getDate() - 6);
-  const last7 = await listTransactionsSince(supabase, toYMD(sevenDaysAgo));
   const totalsByDate = new Map<string, number>();
   for (const t of last7) totalsByDate.set(t.transactionDate, (totalsByDate.get(t.transactionDate) ?? 0) + t.amount);
   const week: { date: string; label: string; value: number }[] = [];
@@ -81,8 +101,8 @@ export default async function DashboardPage() {
   }
   const weekTotal = week.reduce((s, d) => s + d.value, 0);
 
-  const recent = await listRecentTransactions(supabase, 4);
   const daysLeft = daysLeftInMonth();
+  const tourOpen = tour === "1" || !hasSeenTour;
 
   return (
     <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
@@ -94,7 +114,7 @@ export default async function DashboardPage() {
             {streak} tháng
           </Link>
         )}
-        <Link href="/transactions/new" className="btn btn-primary hidden md:inline-flex">
+        <Link data-tour="add-transaction-desktop" href="/transactions/new" className="btn btn-primary hidden md:inline-flex">
           Nhập giao dịch
         </Link>
       </div>
@@ -103,13 +123,13 @@ export default async function DashboardPage() {
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <Icon name="wallet" className="h-8 w-8 text-neutral-500" />
           <p className="text-sm text-neutral-700">Chưa có hũ ngân sách nào. Tạo hũ đầu tiên để bắt đầu theo dõi.</p>
-          <Link href="/jars/new" className="btn btn-primary">
+          <Link data-tour="empty-create-jar" href="/jars/new" className="btn btn-primary">
             Tạo hũ mới
           </Link>
         </div>
       ) : (
         <>
-          <div className="border-b-2 border-divider pb-4">
+          <div data-tour="remaining-summary" className="border-b-2 border-divider pb-4">
             <div>
               <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Còn lại</div>
               <div className="mt-1.5 font-heading text-4xl font-extrabold tabular-nums md:text-[40px]">{formatVND(remaining)}</div>
@@ -132,7 +152,7 @@ export default async function DashboardPage() {
 
           <div>
             <div className="mb-2 text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Tình trạng các hũ</div>
-            <div className="grid grid-cols-2 gap-px border border-divider bg-divider sm:grid-cols-3">
+            <div data-tour="jars-grid" className="grid grid-cols-2 gap-px border border-divider bg-divider sm:grid-cols-3">
               {displayJars.map((jar, i) => {
                 const s = jarStats(jar, formatVND);
                 const isLastOdd = i === displayJars.length - 1 && displayJars.length % 2 === 1;
@@ -174,7 +194,7 @@ export default async function DashboardPage() {
               <WeekTrendChart week={week} />
             </div>
 
-            <div>
+            <div data-tour="recent-transactions">
               <div className="mb-2 flex items-center justify-between">
                 <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Giao dịch gần nhất</div>
                 <Link href="/transactions" className="text-xs text-accent">
@@ -196,6 +216,8 @@ export default async function DashboardPage() {
           </div>
         </>
       )}
+
+      <ProductTour initialOpen={tourOpen} hasJars={jars.length > 0} />
     </div>
   );
 }

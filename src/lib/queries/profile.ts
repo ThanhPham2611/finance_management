@@ -5,6 +5,7 @@ export type CurrentProfile = {
   email: string | null;
   fullName: string | null;
   currency: string;
+  hasSeenTour: boolean;
 };
 
 /**
@@ -18,7 +19,7 @@ export async function getCurrentProfile(supabase: SupabaseClient): Promise<Curre
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, currency")
+    .select("full_name, currency, has_seen_tour")
     .eq("id", user.id)
     .maybeSingle();
 
@@ -27,6 +28,7 @@ export async function getCurrentProfile(supabase: SupabaseClient): Promise<Curre
     email: (user as User).email ?? null,
     fullName: profile?.full_name ?? null,
     currency: profile?.currency ?? "VND",
+    hasSeenTour: profile?.has_seen_tour ?? false,
   };
 }
 

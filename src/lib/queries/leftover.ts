@@ -108,37 +108,32 @@ async function computeMonthEndCandidates(supabase: SupabaseClient, userId: strin
   // sach sau khi chia luong thang do. Hu nao khong co lich su cho thang truoc
   // (vd tao sau khi da chia luong, hoac thang do chua tung bam "Ap dung") thi
   // roi ve xap xi bang monthly_budget hien tai nhu truoc day.
-  const exactBudgetByJar = new Map<string, number>();
-  const { data: incomeRow } = await supabase
-    .from("incomes")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("period_month", periodMonth)
-    .maybeSingle();
-  if (incomeRow) {
-    const { data: allocRows } = await supabase
-      .from("jar_allocations")
+  const remainingIds = remaining.map((j) => j.id);
+  const [allocRows, { data: txs, error: txError }] = await Promise.all([
+    supabase
+      .from("incomes")
+      .select("id")
+      .eq("user_id", userId)
+      .eq("period_month", periodMonth)
+      .maybeSingle()
+      .then(async ({ data: incomeRow }) => {
+        if (!incomeRow) return [];
+        const { data } = await supabase.from("jar_allocations").select("jar_id, amount").eq("income_id", incomeRow.id).in("jar_id", remainingIds);
+        return data ?? [];
+      }),
+    supabase
+      .from("transactions")
       .select("jar_id, amount")
-      .eq("income_id", incomeRow.id)
-      .in(
-        "jar_id",
-        remaining.map((j) => j.id)
-      );
-    for (const row of allocRows ?? []) {
-      exactBudgetByJar.set(row.jar_id as string, Number(row.amount));
-    }
-  }
-
-  const { data: txs, error: txError } = await supabase
-    .from("transactions")
-    .select("jar_id, amount")
-    .in(
-      "jar_id",
-      remaining.map((j) => j.id)
-    )
-    .gte("transaction_date", periodMonth)
-    .lt("transaction_date", monthNow);
+      .in("jar_id", remainingIds)
+      .gte("transaction_date", periodMonth)
+      .lt("transaction_date", monthNow),
+  ]);
   if (txError) throw txError;
+
+  const exactBudgetByJar = new Map<string, number>();
+  for (const row of allocRows) {
+    exactBudgetByJar.set(row.jar_id as string, Number(row.amount));
+  }
 
   const spentByJar = new Map<string, number>();
   for (const t of txs ?? []) {

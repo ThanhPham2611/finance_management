@@ -77,6 +77,9 @@ export function AppShell({
             {profile ? initialOf(profile) : "?"}
           </div>
           <div className="flex-1 truncate text-[12px]">{profile ? displayNameOf(profile) : "Chưa đăng nhập"}</div>
+          <Link href="/?tour=1" aria-label="Xem hướng dẫn lại" className="text-neutral-700 hover:text-accent">
+            <Icon name="circle-help" className="h-4 w-4" />
+          </Link>
           <form action={logout}>
             <button type="submit" aria-label="Đăng xuất" className="text-neutral-700 hover:text-accent">
               <Icon name="log-out" className="h-4 w-4" />
@@ -95,7 +98,7 @@ export function AppShell({
             <TabLink key={item.href} item={item} active={isActive(pathname, item.href)} />
           ))}
           <div className="grid place-items-center">
-            <Link href="/transactions/new" className="grid h-12 w-12 place-items-center bg-accent text-bg">
+            <Link data-tour="add-transaction-mobile" href="/transactions/new" className="grid h-12 w-12 place-items-center bg-accent text-bg">
               <Icon name="plus" className="h-6 w-6" />
             </Link>
           </div>

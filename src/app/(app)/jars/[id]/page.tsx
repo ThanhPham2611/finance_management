@@ -28,8 +28,10 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
   if (!jar) notFound();
 
   const s = jarStats(jar, formatVND);
-  const transactions = await listTransactionsForJar(supabase, jar.id);
-  const household = jar.isShared ? await getMyHousehold(supabase, user.id) : null;
+  const [transactions, household] = await Promise.all([
+    listTransactionsForJar(supabase, jar.id),
+    jar.isShared ? getMyHousehold(supabase, user.id) : null,
+  ]);
   const daysLeft = daysLeftInMonth();
   const dayOfMonth = vnNow().getDate();
   const avgPerDay = dayOfMonth ? Math.round(jar.spent / dayOfMonth) : 0;
