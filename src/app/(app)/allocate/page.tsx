@@ -13,10 +13,12 @@ export default async function AllocatePage() {
     return <AllocateClient jars={[]} familyContribution={0} familyJarCount={0} />;
   }
 
-  const allJars = await listJarsWithSpent(supabase);
+  const [allJars, familyContribution] = await Promise.all([
+    listJarsWithSpent(supabase),
+    getMyFamilyContributionTotal(supabase, user.id, currentMonthStart()),
+  ]);
   const personalJars = allJars.filter((j) => !j.isShared);
   const familyJarCount = allJars.filter((j) => j.isShared).length;
-  const familyContribution = await getMyFamilyContributionTotal(supabase, user.id, currentMonthStart());
 
   return <AllocateClient jars={personalJars} familyContribution={familyContribution} familyJarCount={familyJarCount} />;
 }

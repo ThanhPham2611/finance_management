@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { signup } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function SignupPage({
   searchParams,
@@ -43,9 +44,7 @@ export default async function SignupPage({
             </label>
             <input id="password" name="password" type="password" required minLength={6} autoComplete="new-password" className="input" placeholder="Tối thiểu 6 ký tự" />
           </div>
-          <button type="submit" className="btn btn-primary mt-1.5 justify-center">
-            Đăng ký
-          </button>
+          <SubmitButton pendingLabel="Đang đăng ký...">Đăng ký</SubmitButton>
         </form>
 
         <p className="mt-5 text-center text-[13px] text-neutral-700">

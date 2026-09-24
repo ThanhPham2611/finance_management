@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { login } from "./actions";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function LoginPage({
   searchParams,
@@ -37,9 +38,7 @@ export default async function LoginPage({
             </label>
             <input id="password" name="password" type="password" required autoComplete="current-password" className="input" placeholder="••••••••" />
           </div>
-          <button type="submit" className="btn btn-primary mt-1.5 justify-center">
-            Đăng nhập
-          </button>
+          <SubmitButton pendingLabel="Đang đăng nhập...">Đăng nhập</SubmitButton>
         </form>
 
         <p className="mt-5 text-center text-[13px] text-neutral-700">

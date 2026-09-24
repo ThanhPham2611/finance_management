@@ -18,10 +18,9 @@ export default async function TransactionsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [transactions, jars] = user
-    ? await Promise.all([listTransactionsSince(supabase, currentMonthStart()), listJarsWithSpent(supabase)])
-    : [[], []];
-  const household = user ? await getMyHousehold(supabase, user.id) : null;
+  const [transactions, jars, household] = user
+    ? await Promise.all([listTransactionsSince(supabase, currentMonthStart()), listJarsWithSpent(supabase), getMyHousehold(supabase, user.id)])
+    : [[], [], null];
   const sharedJarIds = new Set(jars.filter((j) => j.isShared).map((j) => j.id));
   const days = groupTransactionsByDay(transactions);
   const totalSpent = transactions.reduce((sum, t) => sum + t.amount, 0);

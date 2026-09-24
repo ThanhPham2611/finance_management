@@ -17,11 +17,10 @@ export default async function HouseholdPage() {
   let familyJars: FamilyJarView[] = [];
   let memberLastSpend: Record<string, string> = {};
   if (household) {
-    const lastSpendTimes = await getMemberLastSpendTimes(supabase, household.id);
+    const [lastSpendTimes, allJars] = await Promise.all([getMemberLastSpendTimes(supabase, household.id), listJarsWithSpent(supabase)]);
     memberLastSpend = Object.fromEntries([...lastSpendTimes].map(([userId, iso]) => [userId, formatDateTimeVN(iso)]));
 
     const periodMonth = currentMonthStart();
-    const allJars = await listJarsWithSpent(supabase);
     const shared = allJars.filter((j) => j.isShared);
     familyJars = await Promise.all(
       shared.map(async (jar) => {

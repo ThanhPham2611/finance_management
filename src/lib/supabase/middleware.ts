@@ -30,8 +30,12 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Quan trong: goi getUser() de refresh token, khong xoa dong nay.
-  const { data: { user } } = await supabase.auth.getUser();
+  // Quan trong: goi getClaims() de refresh token, khong xoa dong nay.
+  // getClaims verify JWT tai cho (khong ton round-trip toi Auth server) neu
+  // project Supabase dung asymmetric signing keys; neu khong thi tu goi
+  // getUser() nhu truoc. Page/layout van goi getUser() de xac thuc chac chan.
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims;
 
   const pathname = request.nextUrl.pathname;
   const isPublicPath = PUBLIC_PATHS.some((p) => pathname.startsWith(p));
