@@ -1,0 +1,13 @@
+appId: vn.hu.finance
+name: Create a transaction
+---
+- launchApp
+- tapOn: "Giao dịch"
+- tapOn: "Ghi giao dịch"
+- assertVisible: "Số tiền"
+- tapOn: "Số tiền"
+- inputText: "10000"
+- tapOn: "Ghi chú"
+- inputText: "Maestro smoke"
+- tapOn: "Lưu giao dịch"
+- assertVisible: "Maestro smoke"

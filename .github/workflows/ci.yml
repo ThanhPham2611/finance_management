@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, feat/mobile_app]
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      EXPO_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder-publishable-key
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run check:tz
+      - run: npm run check:secrets
+      - run: npm run build
+      - run: npm audit --audit-level=critical
+      - run: npx expo install --check
+        working-directory: apps/mobile
+      - run: npx expo-doctor
+        working-directory: apps/mobile
+      - run: npx expo export --platform ios --output-dir /tmp/hu-ios
+        working-directory: apps/mobile
+      - run: npx expo export --platform android --output-dir /tmp/hu-android
+        working-directory: apps/mobile
+
+  web-e2e:
+    runs-on: ubuntu-latest
+    env:
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+      E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+      E2E_TEST_EMAIL_2: ${{ secrets.E2E_TEST_EMAIL_2 }}
+      E2E_TEST_PASSWORD_2: ${{ secrets.E2E_TEST_PASSWORD_2 }}
+      E2E_ALLOW_MUTATIONS: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Skip when the isolated test project is not configured
+        if: ${{ env.E2E_SUPABASE_URL == '' }}
+        run: echo "E2E skipped; configure the isolated Supabase test-project secrets."
+      - name: Install Chromium
+        if: ${{ env.E2E_SUPABASE_URL != '' }}
+        run: npx playwright install --with-deps chromium
+      - name: Run protected E2E and RLS contracts
+        if: ${{ env.E2E_SUPABASE_URL != '' }}
+        run: npm run test:e2e -- --project=chromium
+
+  visual-regression:
+    runs-on: ubuntu-latest
+    env:
+      E2E_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.E2E_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.E2E_SUPABASE_ANON_KEY }}
+      E2E_TEST_EMAIL: ${{ secrets.E2E_TEST_EMAIL }}
+      E2E_TEST_PASSWORD: ${{ secrets.E2E_TEST_PASSWORD }}
+      VISUAL_BASELINES_READY: ${{ secrets.VISUAL_BASELINES_READY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Skip until isolated visual baselines are approved
+        if: ${{ env.VISUAL_BASELINES_READY != 'true' }}
+        run: echo "Visual regression skipped; generate and approve test-project baselines first."
+      - name: Install Chromium
+        if: ${{ env.VISUAL_BASELINES_READY == 'true' }}
+        run: npx playwright install --with-deps chromium
+      - name: Compare screenshots
+        if: ${{ env.VISUAL_BASELINES_READY == 'true' }}
+        run: npm run test:visual
+      - uses: actions/upload-artifact@v4
+        if: ${{ failure() }}
+        with:
+          name: visual-regression-report
+          path: playwright-visual-report

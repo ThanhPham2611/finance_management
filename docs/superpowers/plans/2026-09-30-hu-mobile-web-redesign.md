@@ -51,7 +51,7 @@
 
 - [ ] Migrate auth, dashboard, transactions, jars, allocation/reports, household/sharing without changing domain behavior.
 
-### Task 8: Delivery gates
+### Task 8: Delivery gates ✅
 
 - [ ] Add CI/test-project protections, visual/mobile E2E foundations, and run complete verification.
 
