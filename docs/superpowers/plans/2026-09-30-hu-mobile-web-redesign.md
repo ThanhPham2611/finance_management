@@ -33,7 +33,7 @@
 - [ ] Add typed shared Supabase query/mutation functions.
 - [ ] Convert web Server Actions to thin authenticated adapters where the mobile MVP needs parity.
 
-### Task 4: Mobile application foundation
+### Task 4: Mobile application foundation ✅
 
 - [ ] Add Expo Router, Supabase session lifecycle, TanStack Query lifecycle, typed navigation, and auth screens.
 
