@@ -17,13 +17,13 @@
 
 ## Tasks
 
-### Task 1: Stabilize baseline
+### Task 1: Stabilize baseline ✅
 
 - [ ] Fix the React purity lint failure in chat cooldown behavior.
 - [ ] Guard Playwright so it only runs with an explicit Supabase test environment.
 - [ ] Verify lint, timezone checks, and production build.
 
-### Task 2: Shared workspace foundation
+### Task 2: Shared workspace foundation ✅
 
 - [ ] Add npm workspaces and shared database/domain/design-token packages.
 - [ ] Cover validation, date, money, grouping, and budget calculations with unit tests.

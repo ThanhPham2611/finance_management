@@ -1,16 +1,18 @@
+import { formatMoney, formatSignedMoney, vietnamNow, vietnamToday, VN_TIME_ZONE } from "@hu/domain";
+
 export function formatVND(amount: number): string {
-  return Math.round(amount).toLocaleString("vi-VN");
+  return formatMoney(amount);
 }
 
 export function formatSigned(amount: number): string {
-  return amount < 0 ? `−${formatVND(-amount)}` : formatVND(amount);
+  return formatSignedMoney(amount);
 }
 
 /** Moi phep tinh ngay/thang trong app phai neo vao mui gio Viet Nam, KHONG
  * dung gio local cua server: Vercel chay UTC, nen neu dung gio server thi
  * giao dich nhap tu 00:00-07:00 gio VN bi ghi lui 1 ngay, va giao dich
  * ngay mung 1 roi nham vao bucket thang truoc. */
-export const VN_TZ = "Asia/Ho_Chi_Minh";
+export const VN_TZ = VN_TIME_ZONE;
 
 /** "Bay gio" theo dong ho treo tuong Viet Nam: tra ve 1 Date ma cac truong
  * LOCAL cua no (getFullYear/getMonth/getDate...) da la gio VN. Nho vay moi
@@ -18,14 +20,14 @@ export const VN_TZ = "Asia/Ho_Chi_Minh";
  * van chay dung nhu cu ma khong phai viet lai. Dung sv-SE vi no cho dinh
  * dang "2026-09-20 15:04:05" — parse lai duoc nhu gio local. */
 export function vnNow(): Date {
-  return new Date(new Date().toLocaleString("sv-SE", { timeZone: VN_TZ }));
+  return vietnamNow();
 }
 
 /** Hom nay theo gio VN, dang "YYYY-MM-DD" (en-CA cho san dinh dang nay).
  * Dung cho cot date trong Postgres — thay cho default `current_date` cua
  * DB, vi DB cung chay UTC. */
 export function vnToday(): string {
-  return new Date().toLocaleDateString("en-CA", { timeZone: VN_TZ });
+  return vietnamToday();
 }
 
 /** "14:32 13/09" — dung de hien thi thoi diem chi tieu. */

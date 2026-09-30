@@ -2,17 +2,26 @@
   "name": "finance_management",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev": "node scripts/dev.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
     "test": "npm run test:unit",
-    "test:unit": "node --test scripts/*.test.mjs",
+    "test:unit": "node --test scripts/*.test.mjs && vitest run",
+    "typecheck": "tsc --noEmit && npm run typecheck --workspaces --if-present",
+    "db:types": "npx supabase gen types typescript --linked --schema public > packages/database/src/database.types.ts",
     "check:tz": "node scripts/check-tz.mjs",
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@hu/database": "*",
+    "@hu/design-tokens": "*",
+    "@hu/domain": "*",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.116.0",
     "lucide-react": "^1.45.0",
