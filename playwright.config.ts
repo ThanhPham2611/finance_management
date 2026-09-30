@@ -1,6 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
+import { validateE2EEnvironment } from "./scripts/validate-e2e-env.mjs";
 
 process.loadEnvFile(".env.local");
+validateE2EEnvironment();
 
 const PORT = 4300;
 const baseURL = `http://localhost:${PORT}`;

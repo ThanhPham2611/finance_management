@@ -18,6 +18,12 @@ const STORAGE_KEY = "hu.chat.v1";
 // khong ai doc lai, va server cung chi gui 8 luot gan nhat cho AI.
 const MAX_STORED_TURNS = 40;
 
+// Event handlers may read the wall clock. Keeping that read outside the
+// component makes the render itself deterministic for the React compiler.
+function readWallClock() {
+  return Date.now();
+}
+
 const SUGGESTIONS = ["Ăn trưa 50k", "Tháng này tôi tiêu thế nào?", "Vay 600 triệu mua xe lãi 8%/năm 10 năm có ổn không?"];
 
 function loadTurns(): ChatTurn[] {
@@ -106,7 +112,7 @@ export function ChatDrawer() {
     setSending(true);
     // Bat dau cooldown ngay khi gui, khong doi ket qua tra ve — chan spam
     // ca khi cau truoc bi loi (vd het credit AI) thay vi chi khi thanh cong.
-    setCooldownUntil(Date.now() + COOLDOWN_MS);
+    setCooldownUntil(readWallClock() + COOLDOWN_MS);
     const result = await sendChatMessage(text, history);
     setSending(false);
     if (result.error) {
