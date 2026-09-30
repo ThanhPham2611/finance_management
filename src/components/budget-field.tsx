@@ -63,8 +63,8 @@ export function BudgetField({ value, onChange }: { value: number; onChange: (amo
                 value={row.label}
                 onChange={(e) => updateRow(row.id, { label: e.target.value })}
               />
-              <MoneyInput value={row.amount} onChange={(amount) => updateRow(row.id, { amount })} className="input w-28 text-xs" aria-label="Số tiền khoản này" />
-              <button type="button" onClick={() => removeRow(row.id)} aria-label="Xoá khoản" className="shrink-0 text-neutral-500 hover:text-accent">
+              <MoneyInput value={row.amount} onChange={(amount) => updateRow(row.id, { amount })} className="input w-36" aria-label="Số tiền khoản này" />
+              <button type="button" onClick={() => removeRow(row.id)} aria-label="Xoá khoản" className="btn btn-secondary h-11 w-11 shrink-0 p-0">
                 <Icon name="x" className="h-4 w-4" />
               </button>
             </div>
@@ -95,13 +95,13 @@ export function BudgetField({ value, onChange }: { value: number; onChange: (amo
             key={amount}
             type="button"
             onClick={() => onChange(amount)}
-            className="border px-2.5 py-1.5 text-xs"
+            className="h-11 border px-3 text-sm"
             style={value === amount ? { borderColor: "var(--color-accent)", color: "var(--color-accent)" } : { borderColor: "var(--color-divider)" }}
           >
             {formatVND(amount)}
           </button>
         ))}
-        <MoneyInput value={value} onChange={onChange} className="input w-32 text-xs" aria-label="Nhập số tiền khác" />
+        <MoneyInput value={value} onChange={onChange} className="input w-36" aria-label="Nhập số tiền khác" />
       </div>
       <button type="button" onClick={toBreakdown} className="mt-2 text-xs text-accent hover:underline">
         Chưa biết rõ tổng? Cộng từ từng khoản nhỏ

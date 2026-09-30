@@ -27,6 +27,14 @@ export async function createClient() {
           }
         },
       },
+      global: {
+        // Next.js patch global fetch va mac dinh cache theo URL — bo qua
+        // Authorization header. Du lieu qua Supabase la du lieu rieng theo
+        // tung user (loc boi RLS dua tren cookie phien), cache theo URL la
+        // sai (co the tra du lieu cu, hoac lech dang gan sang response cua
+        // request khac). Tat cache cho moi request toi Supabase.
+        fetch: (input, init) => fetch(input, { ...init, cache: "no-store" }),
+      },
     }
   );
 }

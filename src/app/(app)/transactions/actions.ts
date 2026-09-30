@@ -9,6 +9,7 @@ export type UpdateTransactionInput = {
   amount: number;
   note: string;
   transactionDate: string;
+  type: "expense" | "deposit";
 };
 
 export async function updateTransaction(input: UpdateTransactionInput): Promise<{ error?: string }> {
@@ -41,9 +42,32 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
       amount: input.amount,
       note: input.note.trim() || null,
       transaction_date: input.transactionDate,
+      type: input.type,
     })
     .eq("id", input.id);
 
+  if (error) return { error: error.message };
+
+  revalidatePath("/jars");
+  revalidatePath(`/jars/${input.jarId}`);
+  revalidatePath("/");
+  revalidatePath("/allocate");
+  revalidatePath("/transactions");
+  revalidatePath("/reports");
+  return {};
+}
+
+/** Xoa 1 giao dich — chi giao dich do CHINH MINH tao (loc them user_id o
+ * day, du RLS hien cho phep thanh vien gia dinh xoa cheo giao dich trong
+ * hu quy chung — khong muon nguoi khac xoa duoc giao dich cua minh). */
+export async function deleteTransaction(input: { id: string; jarId: string }): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Bạn cần đăng nhập lại." };
+
+  const { error } = await supabase.from("transactions").delete().eq("id", input.id).eq("user_id", user.id);
   if (error) return { error: error.message };
 
   revalidatePath("/jars");

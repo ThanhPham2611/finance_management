@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis } from "recharts";
 import { Icon } from "@/components/icon";
 import { EditableTransaction } from "@/components/editable-transaction";
 import { formatVND, vnToday } from "@/lib/format";
-import type { RealJar } from "@/lib/queries/jars";
-import type { JarSpendRow, RangeData, RangeId } from "@/lib/queries/reports";
+import { jarLabel, type RealJar } from "@/lib/queries/jars";
+import { buildJarSpendRows, buildRanges, type RangeId } from "@/lib/queries/reports";
 import type { RealTransactionWithJar } from "@/lib/queries/transactions";
 
 const axisTick = { fontSize: 10, fill: "var(--color-neutral-700)" };
@@ -17,6 +17,13 @@ const TABS = [
   { id: "time", label: "Theo thời gian" },
   { id: "bucket", label: "Theo hũ" },
 ] as const;
+
+type Scope = "all" | "personal" | "family";
+const SCOPES: { id: Scope; label: string }[] = [
+  { id: "all", label: "Tất cả" },
+  { id: "personal", label: "Cá nhân" },
+  { id: "family", label: "Gia đình" },
+];
 
 function downloadCsv(rows: RealTransactionWithJar[]) {
   const header = ["Ngày", "Hũ", "Ghi chú", "Số tiền (VND)"];
@@ -32,20 +39,35 @@ function downloadCsv(rows: RealTransactionWithJar[]) {
 }
 
 export function ReportsClient({
-  ranges,
-  jarRows,
-  recentTransactions,
   allTransactions,
   jars,
+  myUserId,
 }: {
-  ranges: RangeData[];
-  jarRows: JarSpendRow[];
-  recentTransactions: RealTransactionWithJar[];
   allTransactions: RealTransactionWithJar[];
   jars: RealJar[];
+  myUserId: string;
 }) {
   const [rangeId, setRangeId] = useState<RangeId>("month");
   const [tab, setTab] = useState<(typeof TABS)[number]["id"]>("time");
+  const [scope, setScope] = useState<Scope>("all");
+
+  const sharedJarIds = useMemo(() => new Set(jars.filter((j) => j.isShared).map((j) => j.id)), [jars]);
+  const hasFamilyJars = sharedJarIds.size > 0;
+
+  // Ca nhan/gia dinh chi phan biet duoc qua hu (jar.isShared) — 1 giao dich
+  // thuoc "gia dinh" khi no nam trong 1 hu quy chung, bat ke ai chi.
+  const scopedTransactions = useMemo(() => {
+    if (scope === "all") return allTransactions;
+    return allTransactions.filter((t) => (scope === "family") === sharedJarIds.has(t.jarId));
+  }, [allTransactions, scope, sharedJarIds]);
+  const scopedJars = useMemo(() => {
+    if (scope === "all") return jars;
+    return jars.filter((j) => (scope === "family") === j.isShared);
+  }, [jars, scope]);
+
+  const ranges = useMemo(() => buildRanges(scopedTransactions), [scopedTransactions]);
+  const jarRows = useMemo(() => buildJarSpendRows(scopedJars, scopedTransactions), [scopedJars, scopedTransactions]);
+  const recentTransactions = useMemo(() => scopedTransactions.slice(0, 5), [scopedTransactions]);
 
   const range = ranges.find((r) => r.id === rangeId)!;
   const delta = range.total - range.prev;
@@ -56,11 +78,27 @@ export function ReportsClient({
     <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
       <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
         <h1 className="mr-auto text-xl md:text-2xl">Báo cáo</h1>
-        <button type="button" onClick={() => downloadCsv(allTransactions)} disabled={allTransactions.length === 0} className="btn btn-secondary">
+        <button type="button" onClick={() => downloadCsv(scopedTransactions)} disabled={scopedTransactions.length === 0} className="btn btn-secondary">
           <Icon name="download" className="h-[15px] w-[15px]" />
           Xuất CSV
         </button>
       </div>
+
+      {hasFamilyJars && (
+        <div className="flex gap-px border border-divider bg-divider">
+          {SCOPES.map((sc) => (
+            <button
+              key={sc.id}
+              type="button"
+              onClick={() => setScope(sc.id)}
+              className="flex min-h-11 flex-1 items-center justify-center text-sm"
+              style={{ background: sc.id === scope ? "var(--color-accent)" : "var(--color-bg)", color: sc.id === scope ? "var(--color-bg)" : "var(--color-text)" }}
+            >
+              {sc.label}
+            </button>
+          ))}
+        </div>
+      )}
 
       <div className="flex gap-px border border-divider bg-divider">
         {ranges.map((r) => (
@@ -68,7 +106,7 @@ export function ReportsClient({
             key={r.id}
             type="button"
             onClick={() => setRangeId(r.id)}
-            className="flex-1 py-2.5 text-center text-xs"
+            className="flex min-h-11 flex-1 items-center justify-center text-sm"
             style={{ background: r.id === rangeId ? "var(--color-accent)" : "var(--color-bg)", color: r.id === rangeId ? "var(--color-bg)" : "var(--color-text)" }}
           >
             {r.label}
@@ -96,7 +134,7 @@ export function ReportsClient({
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
-            className="flex-1 py-2.5 text-center text-xs"
+            className="flex min-h-11 flex-1 items-center justify-center text-sm"
             style={{ background: t.id === tab ? "var(--color-accent)" : "var(--color-bg)", color: t.id === tab ? "var(--color-bg)" : "var(--color-text)" }}
           >
             {t.label}
@@ -146,7 +184,7 @@ export function ReportsClient({
                       <Link key={jar.id} href={`/jars/${jar.id}`} className="flex items-center gap-3 border-t border-divider py-2.5">
                         <div className="h-[30px] w-2 shrink-0" style={{ background: jar.color }} />
                         <div className="min-w-0 flex-1">
-                          <div className="text-[13px] font-semibold">{jar.name}</div>
+                          <div className="text-[13px] font-semibold">{jarLabel(jar)}</div>
                           <div className="text-[11px] tabular-nums text-neutral-700">
                             {count} giao dịch · {spentTotal ? ((spent / spentTotal) * 100).toFixed(1) : "0"}% tổng chi
                           </div>
@@ -175,7 +213,7 @@ export function ReportsClient({
         </div>
         {recentTransactions.length === 0 && <p className="py-2.5 text-[13px] text-neutral-700">Chưa có giao dịch nào.</p>}
         {recentTransactions.map((t) => (
-          <EditableTransaction key={t.id} transaction={t} jars={jars}>
+          <EditableTransaction key={t.id} transaction={t} jars={jars} canDelete={t.userId === myUserId}>
             <div className="flex items-center gap-3 border-t border-divider py-2 text-[13px]">
               <span className="flex-1">{t.note || t.jarName}</span>
               <span className="tabular-nums">{formatVND(t.amount)}</span>

@@ -1,9 +1,7 @@
 /**
  * Tinh khoan tra gop hang thang cho 1 KHOAN VAY MOI (vd mua xe, mua nha) —
- * khac voi src/lib/debt-plan.ts (mo phong tra cac khoan NO DA CO, uu tien
- * theo avalanche/snowball). O day chi can cong thuc tra gop co dinh chuan
- * (annuity formula) ma ngan hang hay dung: so tien tra DEU nhau moi thang
- * trong suot ky han.
+ * dung cong thuc tra gop co dinh chuan (annuity formula) ma ngan hang hay
+ * dung: so tien tra DEU nhau moi thang trong suot ky han.
  *
  * Tinh bang CODE (khong nho AI tinh) vi lai kep qua nhieu ky (vd 120
  * thang cho vay 10 nam) la thu LLM de sai/lam tron sai — dung 1 cong thuc

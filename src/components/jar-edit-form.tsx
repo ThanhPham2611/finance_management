@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icon";
 import { BudgetField } from "@/components/budget-field";
-import { Toggle } from "@/components/ui";
+import { Banner, Toggle } from "@/components/ui";
 import { formatVND } from "@/lib/format";
 import type { RealJar } from "@/lib/queries/jars";
 import { deactivateJar, updateJar } from "@/app/(app)/jars/[id]/edit/actions";
@@ -16,6 +16,7 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
   const [budget, setBudget] = useState(jar.monthlyBudget);
   const [alertAt80, setAlertAt80] = useState(jar.alertAt80);
   const [rollover, setRollover] = useState(jar.rollover);
+  const [isSavings, setIsSavings] = useState(jar.isSavings);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +24,7 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
   async function handleSave() {
     setSaving(true);
     setError(null);
-    const result = await updateJar({ jarId: jar.id, name, monthlyBudget: budget, alertAt80, rollover });
+    const result = await updateJar({ jarId: jar.id, name, monthlyBudget: budget, alertAt80, rollover, isSavings });
     setSaving(false);
     if (result.error) {
       setError(result.error);
@@ -75,10 +76,31 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
         )}
       </div>
 
-      <div className="max-w-sm border-t-2 border-divider">
-        <Toggle label="Cảnh báo khi dùng hết 80%" hint="Hiện dải cam trên dashboard" checked={alertAt80} onChange={setAlertAt80} />
-        <Toggle label="Chuyển phần còn lại sang tháng sau" hint="Không dùng hết thì được cộng dồn" checked={rollover} onChange={setRollover} />
-      </div>
+      {!jar.isShared && (
+        <div className="max-w-sm border-t-2 border-divider">
+          <Toggle
+            label="Đánh dấu là hũ tiết kiệm"
+            hint="Tích luỹ dần qua các tháng, không tính vào ngân sách còn lại"
+            checked={isSavings}
+            onChange={setIsSavings}
+          />
+          {isSavings && (
+            <div className="pb-3.5">
+              <Banner icon="piggy-bank" tone="green">
+                Hũ tiết kiệm hiện &ldquo;Đã tiết kiệm được&rdquo; thay vì &ldquo;Còn được chi&rdquo;, luôn bật &ldquo;Chuyển phần
+                còn lại sang tháng sau&rdquo; và tắt cảnh báo 80%, không tính vào tổng &ldquo;Còn lại&rdquo; trên trang chủ. Ghi
+                khoản chi vào hũ này sẽ luôn được hỏi xác nhận vì đó coi như rút tiền tiết kiệm.
+              </Banner>
+            </div>
+          )}
+        </div>
+      )}
+      {!isSavings && (
+        <div className="max-w-sm border-t-2 border-divider">
+          <Toggle label="Cảnh báo khi dùng hết 80%" hint="Hiện dải cam trên dashboard" checked={alertAt80} onChange={setAlertAt80} />
+          <Toggle label="Chuyển phần còn lại sang tháng sau" hint="Không dùng hết thì được cộng dồn" checked={rollover} onChange={setRollover} />
+        </div>
+      )}
       {jar.isShared ? (
         <p className="max-w-sm text-[11px] text-neutral-700">
           Đây là hũ gia đình — ngân sách tự tính từ phần đóng góp của cả 2 người, chỉnh ở trang{" "}

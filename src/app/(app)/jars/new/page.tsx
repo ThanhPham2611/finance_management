@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { BudgetField } from "@/components/budget-field";
 import { Icon } from "@/components/icon";
-import { Toggle } from "@/components/ui";
+import { Banner, Toggle } from "@/components/ui";
 import { PRESETS } from "@/lib/data";
 import { createJars } from "./actions";
 
@@ -15,14 +15,25 @@ type Draft = {
   icon: string;
   hue: string;
   budget: number;
+  isSavings: boolean;
 };
 
 function draftFromPreset(preset: (typeof PRESETS)[number]): Draft {
-  return { key: crypto.randomUUID(), presetName: preset.name, name: preset.name, icon: preset.icon, hue: preset.hue, budget: 0 };
+  return {
+    key: crypto.randomUUID(),
+    presetName: preset.name,
+    name: preset.name,
+    icon: preset.icon,
+    hue: preset.hue,
+    budget: 0,
+    // Preset "Tiết kiệm" bat san toggle tiet kiem — nguoi dung chon preset
+    // nay la coi nhu da chon dung y dinh, khong can bam them.
+    isSavings: preset.name === "Tiết kiệm",
+  };
 }
 
 function draftCustom(): Draft {
-  return { key: crypto.randomUUID(), presetName: null, name: "", icon: "wallet", hue: "var(--color-accent)", budget: 0 };
+  return { key: crypto.randomUUID(), presetName: null, name: "", icon: "wallet", hue: "var(--color-accent)", budget: 0, isSavings: false };
 }
 
 export default function NewJarPage() {
@@ -65,6 +76,7 @@ export default function NewJarPage() {
         monthlyBudget: d.budget,
         alertAt80,
         rollover,
+        isSavings: d.isSavings,
       }))
     );
     setSaving(false);
@@ -187,7 +199,7 @@ export default function NewJarPage() {
                 placeholder={`Tên hũ ${i + 1}`}
               />
               {drafts.length > 1 && (
-                <button type="button" onClick={() => removeDraft(d.key)} aria-label="Bỏ hũ này" className="shrink-0 text-neutral-500 hover:text-accent">
+                <button type="button" onClick={() => removeDraft(d.key)} aria-label="Bỏ hũ này" className="btn btn-secondary h-11 w-11 shrink-0 p-0">
                   <Icon name="x" className="h-4 w-4" />
                 </button>
               )}
@@ -198,12 +210,31 @@ export default function NewJarPage() {
                 <BudgetField value={d.budget} onChange={(budget) => updateDraft(d.key, { budget })} />
               </div>
             </div>
+            <div className="mt-3 border-t border-divider pt-3">
+              <Toggle
+                label="Đánh dấu là hũ tiết kiệm"
+                hint="Tích luỹ dần qua các tháng, không tính vào ngân sách còn lại"
+                checked={d.isSavings}
+                onChange={(v) => updateDraft(d.key, { isSavings: v })}
+              />
+              {d.isSavings && (
+                <div className="mt-2">
+                  <Banner icon="piggy-bank" tone="green">
+                    Hũ tiết kiệm hiện &ldquo;Đã tiết kiệm được&rdquo; thay vì &ldquo;Còn được chi&rdquo;, luôn cộng dồn qua các tháng
+                    (không reset hàng tháng), và không tính vào tổng &ldquo;Còn lại&rdquo; trên trang chủ. Ghi khoản chi vào hũ này
+                    sẽ luôn được hỏi xác nhận vì đó coi như rút tiền tiết kiệm.
+                  </Banner>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>
 
       <div className="max-w-sm border-t-2 border-divider">
-        <div className="pt-3 text-xs text-neutral-700">Áp dụng cho tất cả hũ ở trên</div>
+        <div className="pt-3 text-xs text-neutral-700">
+          Áp dụng cho tất cả hũ ở trên (trừ hũ đã đánh dấu tiết kiệm — luôn cộng dồn, không cảnh báo 80%)
+        </div>
         <Toggle label="Cảnh báo khi dùng hết 80%" hint="Hiện dải cam trên dashboard" checked={alertAt80} onChange={setAlertAt80} />
         <Toggle label="Chuyển phần còn lại sang tháng sau" hint="Không dùng hết thì được cộng dồn" checked={rollover} onChange={setRollover} />
       </div>
