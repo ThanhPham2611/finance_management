@@ -30,8 +30,8 @@ export default async function SharedOwnerPage({ params }: PageProps<"/shared/[ow
   const totalSpent = jars.reduce((s, j) => s + j.spent, 0);
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
+    <div className="page-stack">
+      <div className="page-header">
         <Link href="/shared" aria-label="Quay lại">
           <Icon name="arrow-left" className="h-[19px] w-[19px]" />
         </Link>
@@ -47,7 +47,7 @@ export default async function SharedOwnerPage({ params }: PageProps<"/shared/[ow
         {jars.map((jar) => {
           const s = jarStats(jar, formatVND);
           return (
-            <div key={jar.id} className="border border-divider p-3">
+            <div key={jar.id} className="rounded-card border border-divider bg-surface p-4 shadow-sm">
               <div className="flex items-center gap-2.5">
                 <Icon name={jar.icon} className="h-4 w-4" style={{ color: jar.color }} />
                 <span className="flex-1 text-sm font-semibold">{jar.name}</span>

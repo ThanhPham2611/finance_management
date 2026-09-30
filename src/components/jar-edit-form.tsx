@@ -49,12 +49,12 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
+    <div className="page-stack">
+      <div className="page-header">
         <button type="button" onClick={() => router.back()} aria-label="Quay lại">
           <Icon name="arrow-left" className="h-[19px] w-[19px]" />
         </button>
-        <div className="grid h-8 w-8 shrink-0 place-items-center" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: jar.color }}>
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px]" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: jar.color }}>
           <Icon name={jar.icon} className="h-4 w-4" />
         </div>
         <h1 className="mr-auto text-lg md:text-xl">Sửa {jar.name}</h1>

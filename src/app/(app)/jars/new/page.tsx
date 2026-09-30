@@ -106,8 +106,8 @@ export default function NewJarPage() {
 
   if (step === 1) {
     return (
-      <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-        <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
+      <div className="page-stack">
+        <div className="page-header">
           <Link href="/jars" aria-label="Đóng">
             <Icon name="x" className="h-[19px] w-[19px]" />
           </Link>
@@ -120,7 +120,7 @@ export default function NewJarPage() {
           <p className="mt-1.5 text-sm text-neutral-700">Chọn bao nhiêu mẫu cũng được, hoặc bấm &ldquo;Tự đặt tên&rdquo; để thêm từng hũ riêng — tạo một lần cho tất cả.</p>
         </div>
 
-        <div className="grid grid-cols-2 gap-px border border-divider bg-divider sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {PRESETS.map((p) => {
             const selected = drafts.some((d) => d.presetName === p.name);
             return (
@@ -128,8 +128,7 @@ export default function NewJarPage() {
                 key={p.name}
                 type="button"
                 onClick={() => togglePreset(p)}
-                className="flex flex-col gap-2 p-3.5 text-left"
-                style={{ background: selected ? "var(--color-accent-100)" : "var(--color-bg)" }}
+                className={`flex min-h-28 flex-col gap-2 rounded-card border p-3.5 text-left ${selected ? "border-primary bg-[#E5EEE9]" : "border-divider bg-surface"}`}
               >
                 <div className="flex items-center gap-2">
                   <Icon name={p.icon} className="h-[17px] w-[17px]" style={{ color: p.hue }} />
@@ -140,7 +139,7 @@ export default function NewJarPage() {
               </button>
             );
           })}
-          <button type="button" onClick={addCustom} className="col-span-2 flex flex-col gap-2 bg-bg p-3.5 text-left sm:col-span-4">
+          <button type="button" onClick={addCustom} className="col-span-2 flex flex-col gap-2 rounded-card border border-dashed border-divider bg-surface p-3.5 text-left sm:col-span-4">
             <div className="flex items-center gap-2">
               <Icon name="pencil-line" className="h-[17px] w-[17px] text-accent" />
               <span className="text-[13px] font-semibold">Tự đặt tên</span>
@@ -176,8 +175,8 @@ export default function NewJarPage() {
   const canSave = drafts.length > 0 && drafts.every((d) => d.name.trim() !== "");
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
+    <div className="page-stack">
+      <div className="page-header">
         <button type="button" onClick={() => setStep(1)} aria-label="Quay lại">
           <Icon name="arrow-left" className="h-[19px] w-[19px]" />
         </button>
@@ -187,9 +186,9 @@ export default function NewJarPage() {
 
       <div className="flex flex-col gap-4">
         {drafts.map((d, i) => (
-          <div key={d.key} className="border border-divider p-4">
+          <div key={d.key} className="rounded-card border border-divider bg-surface p-4 shadow-sm">
             <div className="flex items-center gap-2.5">
-              <div className="grid h-8 w-8 shrink-0 place-items-center" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: d.hue }}>
+              <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px]" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: d.hue }}>
                 <Icon name={d.icon} className="h-4 w-4" />
               </div>
               <input

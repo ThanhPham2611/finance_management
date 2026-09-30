@@ -78,12 +78,12 @@ export function TransactionsClient({
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex flex-wrap items-center gap-2 border-b-2 border-divider pb-4">
+    <div className="page-stack">
+      <div className="page-header flex-wrap">
         <Link href={`/transactions?month=${month.prev}`} className="btn btn-secondary px-2" aria-label="Tháng trước">
           <Icon name="chevron-left" className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl md:text-2xl">{month.label}</h1>
+        <h1>{month.label}</h1>
         {month.next ? (
           <Link href={`/transactions?month=${month.next}`} className="btn btn-secondary px-2" aria-label="Tháng sau">
             <Icon name="chevron-right" className="h-4 w-4" />
@@ -111,7 +111,7 @@ export function TransactionsClient({
           />
         </label>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex flex-1 gap-px border border-divider bg-divider">
+          <div className="flex flex-1 gap-px overflow-hidden rounded-control border border-divider bg-divider">
             {TYPES.map((item) => (
               <button
                 key={item.id}
@@ -120,8 +120,8 @@ export function TransactionsClient({
                 aria-pressed={item.id === type}
                 className="flex h-11 flex-1 items-center justify-center text-sm"
                 style={{
-                  background: item.id === type ? "var(--color-accent)" : "var(--color-bg)",
-                  color: item.id === type ? "var(--color-bg)" : "var(--color-text)",
+                  background: item.id === type ? "var(--color-primary)" : "var(--color-bg)",
+                  color: item.id === type ? "var(--color-on-primary)" : "var(--color-text)",
                 }}
               >
                 {item.label}
@@ -162,7 +162,7 @@ export function TransactionsClient({
           )}
         </div>
         {sharedJarIds.size > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-px border border-divider bg-divider">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <ScopeCard
               label="Cá nhân"
               amount={matchedSpend.reduce((sum, t) => sum + t.amount, 0) - familySpent}
@@ -244,7 +244,7 @@ export function TransactionsClient({
 
 function ScopeCard({ label, amount, count, pressed, onClick }: { label: string; amount: number; count: number; pressed: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={pressed} className="p-3 text-left" style={{ background: pressed ? "var(--color-accent)" : "var(--color-bg)", color: pressed ? "var(--color-bg)" : undefined }}>
+    <button type="button" onClick={onClick} aria-pressed={pressed} className="rounded-control p-3 text-left" style={{ background: pressed ? "var(--color-primary)" : "var(--color-bg)", color: pressed ? "var(--color-on-primary)" : undefined }}>
       <div className={`text-[10px] tracking-[0.1em] uppercase ${pressed ? "opacity-80" : "text-neutral-700"}`}>{label}</div>
       <div className="mt-1 font-heading text-lg font-extrabold tabular-nums">{formatVND(amount)}</div>
       <div className={`text-[11px] ${pressed ? "opacity-80" : "text-neutral-700"}`}>{count} giao dịch</div>

@@ -124,7 +124,7 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
     const updatedJar: RealJar = { ...jar, spent: mode === "deposit" ? jar.spent - amount : jar.spent + amount };
     const stats = jarStats(updatedJar, formatVND);
     return (
-      <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
+      <div className="page-stack">
         <div className="flex items-center gap-2.5 border-b-2 border-divider py-3" style={{ background: "oklch(0.52 0.10 155 / 0.16)", color: "var(--color-green-ink)" }}>
           <Icon name="check" className="ml-4 h-[18px] w-[18px]" />
           <div className="flex-1 text-[13px]">
@@ -219,7 +219,7 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
               setConfirmSavings(false);
             }}
             className="flex flex-1 items-center justify-center text-sm"
-            style={{ background: mode === id ? "var(--color-accent)" : "var(--color-bg)", color: mode === id ? "var(--color-bg)" : "var(--color-text)" }}
+            style={{ background: mode === id ? "var(--color-primary)" : "var(--color-bg)", color: mode === id ? "var(--color-on-primary)" : "var(--color-text)" }}
           >
             {label}
           </button>
@@ -278,7 +278,7 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
                   setConfirmSavings(false);
                 }}
                 className={`flex min-h-12 items-center gap-2.5 px-3.5 py-3 text-left ${isLastOdd ? "col-span-2 sm:col-span-1" : ""}`}
-                style={{ background: selected ? "var(--color-accent)" : "var(--color-bg)", color: selected ? "var(--color-bg)" : "var(--color-text)" }}
+                style={{ background: selected ? "var(--color-primary)" : "var(--color-bg)", color: selected ? "var(--color-on-primary)" : "var(--color-text)" }}
               >
                 <Icon name={b.icon} className="h-[17px] w-[17px]" style={{ color: selected ? "var(--color-bg)" : b.color }} />
                 <div className="min-w-0">

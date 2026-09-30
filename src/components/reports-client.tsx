@@ -11,7 +11,7 @@ import { buildJarSpendRows, buildRanges, type RangeId } from "@/lib/queries/repo
 import type { RealTransactionWithJar } from "@/lib/queries/transactions";
 
 const axisTick = { fontSize: 10, fill: "var(--color-neutral-700)" };
-const tooltipStyle = { fontSize: 12, border: "1px solid var(--color-divider)", borderRadius: 0, boxShadow: "none" };
+const tooltipStyle = { fontSize: 14, border: "1px solid var(--color-divider)", borderRadius: 10, boxShadow: "var(--shadow-md)" };
 
 const TABS = [
   { id: "time", label: "Theo thời gian" },
@@ -75,9 +75,9 @@ export function ReportsClient({
   const nonZeroBucketCount = range.values.filter((v) => v > 0).length || 1;
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
-        <h1 className="mr-auto text-xl md:text-2xl">Báo cáo</h1>
+    <div className="page-stack">
+      <div className="page-header">
+        <div className="mr-auto"><p className="eyebrow">NHÌN LẠI ĐỂ ĐI TIẾP</p><h1>Báo cáo</h1><p>Đọc nhịp chi tiêu theo thời gian và từng hũ.</p></div>
         <button type="button" onClick={() => downloadCsv(scopedTransactions)} disabled={scopedTransactions.length === 0} className="btn btn-secondary">
           <Icon name="download" className="h-[15px] w-[15px]" />
           Xuất CSV
@@ -85,14 +85,14 @@ export function ReportsClient({
       </div>
 
       {hasFamilyJars && (
-        <div className="flex gap-px border border-divider bg-divider">
+        <div className="flex gap-px overflow-hidden rounded-control border border-divider bg-divider">
           {SCOPES.map((sc) => (
             <button
               key={sc.id}
               type="button"
               onClick={() => setScope(sc.id)}
               className="flex min-h-11 flex-1 items-center justify-center text-sm"
-              style={{ background: sc.id === scope ? "var(--color-accent)" : "var(--color-bg)", color: sc.id === scope ? "var(--color-bg)" : "var(--color-text)" }}
+              style={{ background: sc.id === scope ? "var(--color-primary)" : "var(--color-bg)", color: sc.id === scope ? "var(--color-on-primary)" : "var(--color-text)" }}
             >
               {sc.label}
             </button>
@@ -100,14 +100,14 @@ export function ReportsClient({
         </div>
       )}
 
-      <div className="flex gap-px border border-divider bg-divider">
+      <div className="flex gap-px overflow-hidden rounded-control border border-divider bg-divider">
         {ranges.map((r) => (
           <button
             key={r.id}
             type="button"
             onClick={() => setRangeId(r.id)}
             className="flex min-h-11 flex-1 items-center justify-center text-sm"
-            style={{ background: r.id === rangeId ? "var(--color-accent)" : "var(--color-bg)", color: r.id === rangeId ? "var(--color-bg)" : "var(--color-text)" }}
+            style={{ background: r.id === rangeId ? "var(--color-primary)" : "var(--color-bg)", color: r.id === rangeId ? "var(--color-on-primary)" : "var(--color-text)" }}
           >
             {r.label}
           </button>
@@ -128,14 +128,14 @@ export function ReportsClient({
         </div>
       </div>
 
-      <div className="flex gap-px border border-divider bg-divider">
+      <div className="flex gap-px overflow-hidden rounded-control border border-divider bg-divider">
         {TABS.map((t) => (
           <button
             key={t.id}
             type="button"
             onClick={() => setTab(t.id)}
             className="flex min-h-11 flex-1 items-center justify-center text-sm"
-            style={{ background: t.id === tab ? "var(--color-accent)" : "var(--color-bg)", color: t.id === tab ? "var(--color-bg)" : "var(--color-text)" }}
+            style={{ background: t.id === tab ? "var(--color-primary)" : "var(--color-bg)", color: t.id === tab ? "var(--color-on-primary)" : "var(--color-text)" }}
           >
             {t.label}
           </button>

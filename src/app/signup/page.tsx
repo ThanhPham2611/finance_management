@@ -1,59 +1,17 @@
-import Link from "next/link";
 import { signup } from "./actions";
+import { AuthShell } from "@/components/auth-shell";
 import { SubmitButton } from "@/components/submit-button";
 
-export default async function SignupPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ error?: string }>;
-}) {
+export default async function SignupPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
-
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-6 px-4 py-10">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <div className="font-heading text-2xl font-extrabold">
-            Hũ<span className="text-accent">.</span>
-          </div>
-          <p className="mt-1 text-sm text-neutral-700">Tạo tài khoản để bắt đầu chia hũ ngân sách</p>
-        </div>
-
-        {error && (
-          <div className="mb-4 border-2 px-3.5 py-2.5 text-[13px]" style={{ borderColor: "var(--color-accent)", background: "var(--color-accent-100)", color: "var(--color-accent-700)" }}>
-            {error}
-          </div>
-        )}
-
-        <form action={signup} className="flex flex-col gap-3.5">
-          <div>
-            <label htmlFor="fullName" className="mb-1 block text-[10px] tracking-[0.12em] text-neutral-700 uppercase">
-              Họ tên
-            </label>
-            <input id="fullName" name="fullName" type="text" autoComplete="name" className="input" placeholder="Nguyễn Văn A" />
-          </div>
-          <div>
-            <label htmlFor="email" className="mb-1 block text-[10px] tracking-[0.12em] text-neutral-700 uppercase">
-              Email
-            </label>
-            <input id="email" name="email" type="email" required autoComplete="email" className="input" placeholder="ban@email.com" />
-          </div>
-          <div>
-            <label htmlFor="password" className="mb-1 block text-[10px] tracking-[0.12em] text-neutral-700 uppercase">
-              Mật khẩu
-            </label>
-            <input id="password" name="password" type="password" required minLength={6} autoComplete="new-password" className="input" placeholder="Tối thiểu 6 ký tự" />
-          </div>
-          <SubmitButton pendingLabel="Đang đăng ký...">Đăng ký</SubmitButton>
-        </form>
-
-        <p className="mt-5 text-center text-[13px] text-neutral-700">
-          Đã có tài khoản?{" "}
-          <Link href="/login" className="btn-ghost">
-            Đăng nhập
-          </Link>
-        </p>
-      </div>
-    </div>
+    <AuthShell title="Tạo tài khoản" subtitle="Bắt đầu chia tiền theo điều quan trọng với bạn." error={error} alternate={{ prompt: "Đã có tài khoản?", href: "/login", label: "Đăng nhập" }}>
+      <form action={signup} className="flex flex-col gap-5">
+        <label className="field"><span>Họ tên</span><input name="fullName" type="text" autoComplete="name" className="input" placeholder="Nguyễn Văn A" /></label>
+        <label className="field"><span>Email</span><input name="email" type="email" required autoComplete="email" className="input" placeholder="ban@email.com" /></label>
+        <label className="field"><span>Mật khẩu</span><input name="password" type="password" required minLength={6} autoComplete="new-password" className="input" placeholder="Tối thiểu 6 ký tự" /><span className="mt-1 block text-sm text-neutral-700">Dùng ít nhất 6 ký tự.</span></label>
+        <SubmitButton pendingLabel="Đang đăng ký..." className="btn btn-primary mt-1 justify-center">Tạo tài khoản</SubmitButton>
+      </form>
+    </AuthShell>
   );
 }

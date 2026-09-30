@@ -47,7 +47,7 @@
 - [ ] Implement semantic tokens and accessible primitives.
 - [ ] Replace web navigation with the responsive desktop/mobile information architecture.
 
-### Task 7: Web vertical-slice redesign
+### Task 7: Web vertical-slice redesign ✅
 
 - [ ] Migrate auth, dashboard, transactions, jars, allocation/reports, household/sharing without changing domain behavior.
 

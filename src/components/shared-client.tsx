@@ -23,9 +23,9 @@ export function SharedClient({
   outgoing: OutgoingShare[];
 }) {
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
-        <h1 className="mr-auto text-xl md:text-2xl">Chia sẻ chi tiêu</h1>
+    <div className="page-stack">
+      <div className="page-header">
+        <div><p className="eyebrow">MINH BẠCH KHI BẠN CHỌN</p><h1>Chia sẻ chi tiêu</h1><p>Cho người tin cậy quyền xem, không trao quyền chỉnh sửa.</p></div>
       </div>
 
       <p className="text-sm text-neutral-700">
@@ -38,7 +38,7 @@ export function SharedClient({
       {incoming.length > 0 && (
         <div>
           <div className="mb-2 text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Lời mời đang chờ bạn</div>
-          <div className="border border-divider">
+          <div className="overflow-hidden rounded-card border border-divider bg-surface shadow-sm">
             {incoming.map((s) => (
               <IncomingRow key={s.id} share={s} />
             ))}
@@ -51,7 +51,7 @@ export function SharedClient({
         {accepted.length === 0 ? (
           <p className="text-[13px] text-neutral-700">Chưa có ai chia sẻ chi tiêu với bạn.</p>
         ) : (
-          <div className="border border-divider">
+          <div className="overflow-hidden rounded-card border border-divider bg-surface shadow-sm">
             {accepted.map((s) => (
               <Link key={s.id} href={`/shared/${s.ownerId}`} className="flex items-center gap-3 border-b border-divider px-4 py-3 last:border-b-0 hover:bg-surface">
                 <div className="grid h-8 w-8 shrink-0 place-items-center bg-text text-[12px] font-semibold text-bg">
@@ -69,7 +69,7 @@ export function SharedClient({
         {outgoing.length === 0 ? (
           <p className="text-[13px] text-neutral-700">Bạn chưa chia sẻ chi tiêu với ai.</p>
         ) : (
-          <div className="border border-divider">
+          <div className="overflow-hidden rounded-card border border-divider bg-surface shadow-sm">
             {outgoing.map((s) => (
               <OutgoingRow key={s.id} share={s} />
             ))}
@@ -100,7 +100,7 @@ function InviteForm() {
   }
 
   return (
-    <div className="border border-divider p-4">
+    <div className="rounded-card border border-divider bg-surface p-4 shadow-sm">
       <div className="field">
         <label htmlFor="share-email">Email người bạn muốn chia sẻ</label>
         <input

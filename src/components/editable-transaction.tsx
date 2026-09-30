@@ -101,7 +101,7 @@ export function EditableTransaction({
               setConfirmSavings(false);
             }}
             className="flex flex-1 items-center justify-center text-sm"
-            style={{ background: type === id ? "var(--color-accent)" : "var(--color-bg)", color: type === id ? "var(--color-bg)" : "var(--color-text)" }}
+            style={{ background: type === id ? "var(--color-primary)" : "var(--color-bg)", color: type === id ? "var(--color-on-primary)" : "var(--color-text)" }}
           >
             {label}
           </button>
