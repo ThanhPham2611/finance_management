@@ -37,12 +37,12 @@
 
 - [ ] Add Expo Router, Supabase session lifecycle, TanStack Query lifecycle, typed navigation, and auth screens.
 
-### Task 5: Mobile finance MVP
+### Task 5: Mobile finance MVP ✅
 
 - [ ] Implement overview, jar list/detail/create/edit, and transaction list/create/edit/delete.
 - [ ] Cover loading, empty, error, refresh, offline mutation blocking, and retained form input.
 
-### Task 6: Web design system and shell
+### Task 6: Web design system and shell ✅
 
 - [ ] Implement semantic tokens and accessible primitives.
 - [ ] Replace web navigation with the responsive desktop/mobile information architecture.

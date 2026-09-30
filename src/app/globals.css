@@ -1,48 +1,66 @@
 @import "tailwindcss";
 
-/* Modernist tokens — flat, architectural, near-mono red on white.
-   Ported from the "Hũ" design system in claude.ai/design. */
 :root {
-  --color-bg: #f3f2f2;
-  --color-surface: #eae9e9;
-  --color-text: #201e1d;
-  --color-accent: #ec3013;
-  --color-divider: color-mix(in srgb, #201e1d 40%, transparent);
+  --color-bg: #f5f3ed;
+  --color-surface: #fffefa;
+  --color-surface-subtle: #ece8de;
+  --color-text: #172420;
+  --color-text-muted: #5b6862;
+  --color-primary: #174c3c;
+  --color-on-primary: #ffffff;
+  --color-accent: #9a5b13;
+  --color-on-accent: #ffffff;
+  --color-success: #2e6b57;
+  --color-warning: #9a5b13;
+  --color-destructive: #b42318;
+  --color-border: #d7d2c7;
+  --color-divider: var(--color-border);
 
-  --color-neutral-100: #f8f4f4;
-  --color-neutral-200: #eae7e7;
-  --color-neutral-300: #d7d3d3;
-  --color-neutral-400: #bab6b6;
-  --color-neutral-500: #9b9797;
-  --color-neutral-600: #7d7979;
-  --color-neutral-700: #605d5d;
-  --color-neutral-800: #444141;
-  --color-neutral-900: #2d2b2b;
+  --color-neutral-100: #f8f6f1;
+  --color-neutral-200: #ece8de;
+  --color-neutral-300: #d7d2c7;
+  --color-neutral-400: #b7b2a8;
+  --color-neutral-500: #8d918b;
+  --color-neutral-600: #707b75;
+  --color-neutral-700: #5b6862;
+  --color-neutral-800: #34453e;
+  --color-neutral-900: #172420;
 
-  --color-accent-100: #fff2ef;
-  --color-accent-200: #ffe0d9;
-  --color-accent-300: #ffc4b8;
-  --color-accent-600: #dd2b0f;
-  --color-accent-700: #ae1800;
+  --color-accent-100: #f8eddd;
+  --color-accent-200: #f0d8b3;
+  --color-accent-300: #dfb774;
+  --color-accent-600: #804708;
+  --color-accent-700: #633604;
 
-  --color-amber: oklch(0.7 0.15 68);
-  --color-amber-ink: oklch(0.4 0.1 68);
-  --color-green: oklch(0.52 0.1 155);
-  --color-green-ink: oklch(0.45 0.1 155);
+  --color-amber: var(--color-warning);
+  --color-amber-ink: #6a3a07;
+  --color-green: var(--color-success);
+  --color-green-ink: #174c3c;
 
-  --font-heading: var(--font-sans, "Archivo", system-ui, sans-serif);
-  --font-body: var(--font-sans, "Archivo", system-ui, sans-serif);
+  --font-heading: var(--font-lexend, system-ui, sans-serif);
+  --font-body: var(--font-source-sans, system-ui, sans-serif);
 
-  --shadow-sm: 0 1px 2px color-mix(in srgb, #2d2b2b 14%, transparent);
-  --shadow-md: 0 3px 10px color-mix(in srgb, #2d2b2b 16%, transparent);
-  --shadow-lg: 0 12px 32px color-mix(in srgb, #2d2b2b 22%, transparent);
+  --radius-control: 10px;
+  --radius-card: 18px;
+  --radius-sheet: 24px;
+  --shadow-sm: 0 1px 2px color-mix(in srgb, #172420 10%, transparent);
+  --shadow-md: 0 6px 18px color-mix(in srgb, #172420 12%, transparent);
+  --shadow-lg: 0 18px 48px color-mix(in srgb, #172420 16%, transparent);
 }
 
 @theme inline {
   --color-bg: var(--color-bg);
   --color-surface: var(--color-surface);
+  --color-surface-subtle: var(--color-surface-subtle);
   --color-text: var(--color-text);
+  --color-text-muted: var(--color-text-muted);
+  --color-primary: var(--color-primary);
+  --color-on-primary: var(--color-on-primary);
   --color-accent: var(--color-accent);
+  --color-on-accent: var(--color-on-accent);
+  --color-success: var(--color-success);
+  --color-warning: var(--color-warning);
+  --color-destructive: var(--color-destructive);
   --color-accent-100: var(--color-accent-100);
   --color-accent-200: var(--color-accent-200);
   --color-accent-300: var(--color-accent-300);
@@ -62,7 +80,10 @@
   --color-amber-ink: var(--color-amber-ink);
   --color-green: var(--color-green);
   --color-green-ink: var(--color-green-ink);
-  --font-sans: var(--font-sans);
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+  --radius-sheet: var(--radius-sheet);
+  --font-sans: var(--font-body);
   --font-heading: var(--font-heading);
 }
 
@@ -84,8 +105,8 @@
     background: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-body);
-    font-size: 15px;
-    line-height: 1.55;
+    font-size: 16px;
+    line-height: 1.5;
   }
   h1,
   h2,
@@ -112,11 +133,11 @@
     outline: none;
   }
   :focus-visible {
-    outline: 2px solid var(--color-accent);
+    outline: 3px solid var(--color-primary);
     outline-offset: 2px;
   }
   ::selection {
-    background: color-mix(in srgb, var(--color-accent) 30%, transparent);
+    background: color-mix(in srgb, var(--color-accent) 28%, transparent);
   }
 }
 
@@ -138,7 +159,7 @@
     border: 1px solid transparent;
     min-height: 44px;
     padding: 8px 14px;
-    border-radius: 0;
+    border-radius: var(--radius-control);
   }
   .btn svg {
     display: block;
@@ -148,39 +169,94 @@
     cursor: not-allowed;
   }
   .btn-primary {
-    background: var(--color-accent);
-    color: var(--color-bg);
+    background: var(--color-primary);
+    color: var(--color-on-primary);
   }
   .btn-primary:hover {
-    background: var(--color-accent-600);
+    background: color-mix(in srgb, var(--color-primary) 88%, black);
   }
   .btn-primary:active {
-    background: var(--color-accent-700);
+    background: color-mix(in srgb, var(--color-primary) 76%, black);
   }
   .btn-secondary {
     border-color: var(--color-divider);
+    background: var(--color-surface);
   }
   .btn-secondary:hover {
     background: color-mix(in srgb, var(--color-text) 7%, transparent);
   }
   .btn-ghost {
-    color: var(--color-accent);
+    color: var(--color-primary);
     min-height: 0;
     padding-inline: 4px;
   }
   .btn-ghost:hover {
-    background: color-mix(in srgb, var(--color-accent) 10%, transparent);
+    background: color-mix(in srgb, var(--color-primary) 10%, transparent);
   }
   .btn-block {
     width: 100%;
     justify-content: flex-start;
     text-align: left;
   }
+  .btn-destructive {
+    background: var(--color-destructive);
+    color: white;
+  }
+  .btn-destructive:hover {
+    background: color-mix(in srgb, var(--color-destructive) 86%, black);
+  }
+  .icon-button {
+    display: inline-grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: var(--radius-control);
+    color: var(--color-text-muted);
+  }
+  .icon-button:hover {
+    color: var(--color-primary);
+    background: var(--color-surface-subtle);
+  }
+
+  .page-stack {
+    display: flex;
+    width: 100%;
+    max-width: 1180px;
+    margin-inline: auto;
+    flex-direction: column;
+    gap: 20px;
+    padding: 20px 16px 40px;
+  }
+  .page-header {
+    display: flex;
+    min-height: 64px;
+    align-items: end;
+    justify-content: space-between;
+    gap: 16px;
+  }
+  .page-header h1 {
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+  }
+  .page-header p:not(.eyebrow) {
+    margin-top: 4px;
+    color: var(--color-text-muted);
+  }
+  .eyebrow {
+    color: var(--color-primary);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+  }
+  @media (min-width: 768px) {
+    .page-stack {
+      padding: 32px 36px 56px;
+    }
+  }
 
   /* — forms — */
   .field > label {
     display: block;
-    font-size: 12px;
+    font-size: 14px;
     margin-bottom: 5px;
     color: color-mix(in srgb, var(--color-text) 70%, transparent);
   }
@@ -190,13 +266,13 @@
     min-height: 44px;
     padding: 10px 12px;
     font: inherit;
-    font-size: 14px;
+    font-size: 16px;
     line-height: 1.25;
     color: var(--color-text);
     caret-color: var(--color-accent);
     background: var(--color-surface);
     border: 1px solid var(--color-divider);
-    border-radius: 0;
+    border-radius: var(--radius-control);
   }
   /* So tien lon, khong vien — khong ep cung chieu cao 44px voi o form. */
   .input.border-0 {
@@ -208,7 +284,7 @@
     border-color: color-mix(in srgb, var(--color-text) 45%, transparent);
   }
   .input:focus-visible {
-    border-color: var(--color-accent);
+    border-color: var(--color-primary);
     outline-offset: 0;
   }
 
