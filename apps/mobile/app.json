@@ -4,6 +4,7 @@
     "slug": "hu-finance",
     "scheme": "hu",
     "version": "1.0.0",
+    "platforms": ["ios", "android"],
     "orientation": "default",
     "userInterfaceStyle": "light",
     "ios": {
