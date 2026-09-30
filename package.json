@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@hu/database": "*",
+    "@hu/data": "*",
     "@hu/design-tokens": "*",
     "@hu/domain": "*",
     "@supabase/ssr": "^0.12.7",

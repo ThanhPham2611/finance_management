@@ -28,7 +28,7 @@
 - [ ] Add npm workspaces and shared database/domain/design-token packages.
 - [ ] Cover validation, date, money, grouping, and budget calculations with unit tests.
 
-### Task 3: Shared data access
+### Task 3: Shared data access ✅
 
 - [ ] Add typed shared Supabase query/mutation functions.
 - [ ] Convert web Server Actions to thin authenticated adapters where the mobile MVP needs parity.

@@ -48,9 +48,20 @@ function requireSavingsRollover(value: { isSavings: boolean; rollover: boolean }
 
 export const createJarInputSchema = z.object(jarFields).superRefine(requireSavingsRollover);
 
-export const updateJarInputSchema = z.object({ ...jarFields, id: uuid }).superRefine(requireSavingsRollover);
+export const updateJarInputSchema = z
+  .object({
+    id: uuid,
+    name: z.string().trim().min(1).max(80),
+    monthlyBudget: nonNegativeMoney,
+    icon: z.string().trim().min(1).max(64).optional(),
+    color: color.optional(),
+    alertAt80: z.boolean(),
+    rollover: z.boolean(),
+    isSavings: z.boolean(),
+  })
+  .superRefine(requireSavingsRollover);
 
-export type CreateTransactionInput = z.infer<typeof createTransactionInputSchema>;
-export type UpdateTransactionInput = z.infer<typeof updateTransactionInputSchema>;
-export type CreateJarInput = z.infer<typeof createJarInputSchema>;
-export type UpdateJarInput = z.infer<typeof updateJarInputSchema>;
+export type CreateTransactionInput = z.input<typeof createTransactionInputSchema>;
+export type UpdateTransactionInput = z.input<typeof updateTransactionInputSchema>;
+export type CreateJarInput = z.input<typeof createJarInputSchema>;
+export type UpdateJarInput = z.input<typeof updateJarInputSchema>;
