@@ -29,9 +29,13 @@ export default defineConfig({
       testMatch: /auth\.setup\.ts/,
     },
     {
+      name: "setup2",
+      testMatch: /auth2\.setup\.ts/,
+    },
+    {
       name: "chromium",
       use: { ...devices["Desktop Chrome"], storageState: "e2e/.auth/user.json" },
-      dependencies: ["setup"],
+      dependencies: ["setup", "setup2"],
     },
   ],
 });

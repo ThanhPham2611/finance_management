@@ -8,6 +8,7 @@ export type CreateTransactionInput = {
   jarId: string;
   amount: number;
   note: string;
+  type?: "expense" | "deposit";
 };
 
 export async function createTransaction(input: CreateTransactionInput): Promise<{ error?: string }> {
@@ -20,6 +21,8 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
   if (!input.jarId) return { error: "Chưa chọn hũ." };
   if (!(input.amount > 0)) return { error: "Số tiền phải lớn hơn 0." };
 
+  const type = input.type ?? "expense";
+
   // Xac nhan hu nay dung la hu duoc phep dung (cua chinh minh, hoac hu
   // quy chung ma minh la thanh vien gia dinh) — dua vao RLS cua bang jars
   // de tra ve null neu khong co quyen, thay vi tu gioi han chi user_id.
@@ -31,12 +34,15 @@ export async function createTransaction(input: CreateTransactionInput): Promise<
 
   if (jarError) return { error: jarError.message };
   if (!jar) return { error: "Không tìm thấy hũ này." };
+  // "thu" dung type deposit: tru nguoc vao spent nen cong tien vao hu,
+  // ke ca hu chi tieu thuong — khong chi hu tiet kiem.
 
   const { error } = await supabase.from("transactions").insert({
     user_id: user.id,
     jar_id: input.jarId,
     amount: input.amount,
     note: input.note.trim() || null,
+    type,
     // Ghi ro ngay theo gio VN thay vi de DB dung default `current_date`
     // (DB chay UTC — khoan chi luc 1h sang gio VN se bi ghi lui 1 ngay).
     transaction_date: vnToday(),

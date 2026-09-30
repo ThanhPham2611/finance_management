@@ -85,11 +85,6 @@ export function HouseholdClient({
         <h1 className="mr-auto text-xl md:text-2xl">Gia đình</h1>
       </div>
 
-      <p className="text-sm text-neutral-700">
-        Mời người thân vào cùng một &ldquo;gia đình&rdquo; để cùng tạo và góp vào các{" "}
-        <span className="font-semibold">hũ gia đình</span> — tách riêng với hũ cá nhân của mỗi người. Mỗi gia đình tối đa {MAX_HOUSEHOLD_MEMBERS} người.
-      </p>
-
       <div className="border border-divider">
         <div className="border-b border-divider px-4 py-3">
           <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Thành viên</div>
@@ -99,7 +94,9 @@ export function HouseholdClient({
         ))}
         {!isFull && (
           <div className="px-4 py-3 text-[13px] text-neutral-700">
-            {household ? `Còn ${MAX_HOUSEHOLD_MEMBERS - memberCount} chỗ trống.` : "Bạn chưa có gia đình nào — tạo mã mời để bắt đầu."}
+            {household
+              ? `Còn ${MAX_HOUSEHOLD_MEMBERS - memberCount} chỗ trống (tối đa ${MAX_HOUSEHOLD_MEMBERS} người).`
+              : `Bạn chưa có gia đình nào — tạo mã mời để bắt đầu (tối đa ${MAX_HOUSEHOLD_MEMBERS} người).`}
           </div>
         )}
       </div>
@@ -109,54 +106,57 @@ export function HouseholdClient({
           Gia đình đã đủ {MAX_HOUSEHOLD_MEMBERS} thành viên.
         </Banner>
       ) : (
-        <div className="flex flex-col gap-4">
-          <div className="border border-divider p-4">
-            <div className="text-sm font-semibold">Mời người thân</div>
-            <p className="mt-1 text-[13px] text-neutral-700">Tạo mã mời rồi gửi cho người thân (qua Zalo, tin nhắn...). Mã dùng được trong 7 ngày.</p>
+        <details className="border border-divider">
+          <summary className="cursor-pointer px-4 py-3 text-sm font-semibold select-none">Mời hoặc tham gia gia đình</summary>
+          <div className="flex flex-col gap-4 border-t border-divider p-4">
+            <div>
+              <div className="text-sm font-semibold">Mời người thân</div>
+              <p className="mt-1 text-[13px] text-neutral-700">Tạo mã mời rồi gửi cho người thân (qua Zalo, tin nhắn...). Mã dùng được trong 7 ngày.</p>
 
-            {invite ? (
-              <div className="mt-3 flex items-center gap-2.5">
-                <div className="flex-1 border border-dashed border-divider px-3 py-2.5 text-center font-heading text-lg font-extrabold tracking-[0.15em]">
-                  {invite.code}
+              {invite ? (
+                <div className="mt-3 flex items-center gap-2.5">
+                  <div className="flex-1 border border-dashed border-divider px-3 py-2.5 text-center font-heading text-lg font-extrabold tracking-[0.15em]">
+                    {invite.code}
+                  </div>
+                  <button type="button" onClick={handleCopy} className="btn btn-secondary" aria-label="Sao chép mã">
+                    <Icon name={copied ? "check" : "copy"} className="h-4 w-4" />
+                  </button>
                 </div>
-                <button type="button" onClick={handleCopy} className="btn btn-secondary" aria-label="Sao chép mã">
-                  <Icon name={copied ? "check" : "copy"} className="h-4 w-4" />
+              ) : (
+                <button type="button" disabled={creatingInvite} onClick={handleCreateInvite} className="btn btn-primary mt-3">
+                  {creatingInvite ? "Đang tạo…" : "Tạo mã mời"}
+                </button>
+              )}
+              {inviteError && (
+                <p className="mt-2 text-xs" style={{ color: "var(--color-accent-700)" }}>
+                  {inviteError}
+                </p>
+              )}
+            </div>
+
+            <div className="border-t border-divider pt-4">
+              <div className="text-sm font-semibold">Có mã mời từ người thân?</div>
+              <p className="mt-1 text-[13px] text-neutral-700">Nhập mã họ gửi cho bạn để tham gia gia đình của họ.</p>
+              <div className="mt-3 flex items-center gap-2.5">
+                <input
+                  className="input flex-1 text-center tracking-[0.15em] uppercase"
+                  placeholder="VD: A1B2C3D4"
+                  value={joinCode}
+                  onChange={(e) => setJoinCode(e.target.value)}
+                  maxLength={8}
+                />
+                <button type="button" disabled={joining || !joinCode.trim()} onClick={handleJoin} className="btn btn-primary">
+                  {joining ? "Đang tham gia…" : "Tham gia"}
                 </button>
               </div>
-            ) : (
-              <button type="button" disabled={creatingInvite} onClick={handleCreateInvite} className="btn btn-primary mt-3">
-                {creatingInvite ? "Đang tạo…" : "Tạo mã mời"}
-              </button>
-            )}
-            {inviteError && (
-              <p className="mt-2 text-xs" style={{ color: "var(--color-accent-700)" }}>
-                {inviteError}
-              </p>
-            )}
-          </div>
-
-          <div className="border border-divider p-4">
-            <div className="text-sm font-semibold">Có mã mời từ người thân?</div>
-            <p className="mt-1 text-[13px] text-neutral-700">Nhập mã họ gửi cho bạn để tham gia gia đình của họ.</p>
-            <div className="mt-3 flex items-center gap-2.5">
-              <input
-                className="input flex-1 text-center tracking-[0.15em] uppercase"
-                placeholder="VD: A1B2C3D4"
-                value={joinCode}
-                onChange={(e) => setJoinCode(e.target.value)}
-                maxLength={8}
-              />
-              <button type="button" disabled={joining || !joinCode.trim()} onClick={handleJoin} className="btn btn-primary">
-                {joining ? "Đang tham gia…" : "Tham gia"}
-              </button>
+              {joinError && (
+                <p className="mt-2 text-xs" style={{ color: "var(--color-accent-700)" }}>
+                  {joinError}
+                </p>
+              )}
             </div>
-            {joinError && (
-              <p className="mt-2 text-xs" style={{ color: "var(--color-accent-700)" }}>
-                {joinError}
-              </p>
-            )}
           </div>
-        </div>
+        </details>
       )}
 
       {household && (
@@ -361,18 +361,14 @@ function FamilyJarRow({
   return (
     <div className="border border-divider p-4">
       <div className="flex items-center gap-2.5">
-        <Icon name={jar.icon} className="h-4 w-4" style={{ color: jar.color }} />
-        <Link href={`/jars/${jar.id}`} className="flex-1 text-sm font-semibold hover:underline">
+        <Icon name={jar.icon} className="h-4 w-4 shrink-0" style={{ color: jar.color }} />
+        <Link href={`/jars/${jar.id}`} className="text-sm font-semibold hover:underline">
           {jar.name}
         </Link>
-        <button type="button" disabled={deleting} onClick={handleDelete} aria-label={`Xoá hũ ${jar.name}`} title="Xoá hũ" className="text-neutral-700 hover:text-accent-700">
+        <span className="text-[12px] tabular-nums text-neutral-700">· {formatVND(jar.monthlyBudget)}đ/tháng</span>
+        <button type="button" disabled={deleting} onClick={handleDelete} aria-label={`Xoá hũ ${jar.name}`} title="Xoá hũ" className="ml-auto text-neutral-700 hover:text-accent-700">
           <Icon name="trash-2" className="h-4 w-4" />
         </button>
-      </div>
-
-      <div className="mt-1 text-[13px] text-neutral-700">
-        Ngân sách hũ = tổng phần góp của cả nhà ·{" "}
-        <span className="font-semibold tabular-nums text-text">{formatVND(jar.monthlyBudget)}đ/tháng</span>
       </div>
 
       {/* Ai gop bao nhieu, bao nhieu % — luon hien, khong can bam luu moi thay. */}
@@ -382,10 +378,7 @@ function FamilyJarRow({
           const shownAmount = isMe ? amount : c.amount;
           return (
             <div key={c.userId} className="flex items-center gap-2.5 text-[13px]">
-              <span className="w-20 shrink-0 text-neutral-700">
-                {c.name}
-                {isMe ? " (bạn)" : ""}
-              </span>
+              <span className="w-20 shrink-0 text-neutral-700">{c.name}</span>
               <div className="h-1.5 flex-1 bg-neutral-300">
                 <div className="h-full" style={{ width: `${pctOf(shownAmount)}%`, background: jar.color }} />
               </div>
@@ -397,11 +390,9 @@ function FamilyJarRow({
         })}
       </div>
 
-      <div className="mt-3 border-t border-divider pt-3">
-        <label htmlFor={`contrib-${jar.id}`} className="text-[12px] font-semibold">
-          Số tiền bạn góp mỗi tháng cho hũ này
-        </label>
-        <div className="mt-1.5 flex items-center gap-2.5">
+      <details className="mt-3 border-t border-divider pt-3">
+        <summary className="cursor-pointer text-[12px] font-semibold select-none">Sửa phần góp của bạn</summary>
+        <div className="mt-2 flex items-center gap-2.5">
           <MoneyInput
             id={`contrib-${jar.id}`}
             value={amount}
@@ -421,7 +412,7 @@ function FamilyJarRow({
         <p className="mt-1.5 text-[11px] text-neutral-700">
           Nhập số tiền cụ thể (không phải %) — hệ thống tự cộng với phần của người kia để ra ngân sách tháng ở trên.
         </p>
-      </div>
+      </details>
 
       {error && (
         <p className="mt-2 text-xs" style={{ color: "var(--color-accent-700)" }}>

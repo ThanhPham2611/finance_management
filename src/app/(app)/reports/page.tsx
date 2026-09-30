@@ -1,7 +1,7 @@
 import { ReportsClient } from "@/components/reports-client";
 import { createClient } from "@/lib/supabase/server";
 import { listJarsWithSpent } from "@/lib/queries/jars";
-import { buildJarSpendRows, buildRanges, reportsFetchSince } from "@/lib/queries/reports";
+import { reportsFetchSince } from "@/lib/queries/reports";
 import { listTransactionsSince } from "@/lib/queries/transactions";
 
 export default async function ReportsPage() {
@@ -11,17 +11,16 @@ export default async function ReportsPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return <ReportsClient ranges={[]} jarRows={[]} recentTransactions={[]} allTransactions={[]} jars={[]} />;
+    return <ReportsClient allTransactions={[]} jars={[]} myUserId="" />;
   }
 
   const [jars, transactions] = await Promise.all([
     listJarsWithSpent(supabase),
     listTransactionsSince(supabase, reportsFetchSince()),
   ]);
+  // Khoan nap (vao hu tiet kiem) khong phai "da chi" — loai khoi so lieu
+  // bao cao tieu dung.
+  const spendTx = transactions.filter((t) => t.type !== "deposit");
 
-  const ranges = buildRanges(transactions);
-  const jarRows = buildJarSpendRows(jars, transactions);
-  const recentTransactions = transactions.slice(0, 5);
-
-  return <ReportsClient ranges={ranges} jarRows={jarRows} recentTransactions={recentTransactions} allTransactions={transactions} jars={jars} />;
+  return <ReportsClient allTransactions={spendTx} jars={jars} myUserId={user.id} />;
 }

@@ -42,6 +42,7 @@ export async function getOrCreateSavingsJar(supabase: SupabaseClient, userId: st
       is_shared: false,
       household_id: null,
       is_default_savings: true,
+      is_savings: true,
       sort_order: 999,
     })
     .select("id")
@@ -123,7 +124,7 @@ async function computeMonthEndCandidates(supabase: SupabaseClient, userId: strin
       }),
     supabase
       .from("transactions")
-      .select("jar_id, amount")
+      .select("jar_id, amount, type")
       .in("jar_id", remainingIds)
       .gte("transaction_date", periodMonth)
       .lt("transaction_date", monthNow),
@@ -135,9 +136,14 @@ async function computeMonthEndCandidates(supabase: SupabaseClient, userId: strin
     exactBudgetByJar.set(row.jar_id as string, Number(row.amount));
   }
 
+  // Khoan nap ("deposit") tru NGUOC vao spent, giong listJarsWithSpent —
+  // neu khong, 1 khoan nap giua thang vao hu tiet kiem se bi tinh lon
+  // thanh "da chi", lam leftover (budget - spent) bi tinh THIEU va rollover
+  // cong THIEU vao thang sau.
   const spentByJar = new Map<string, number>();
   for (const t of txs ?? []) {
-    spentByJar.set(t.jar_id, (spentByJar.get(t.jar_id) ?? 0) + Number(t.amount));
+    const delta = t.type === "deposit" ? -Number(t.amount) : Number(t.amount);
+    spentByJar.set(t.jar_id, (spentByJar.get(t.jar_id) ?? 0) + delta);
   }
 
   return remaining

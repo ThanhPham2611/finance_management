@@ -2,8 +2,7 @@
 -- App quan ly chi tieu - Schema Supabase cho Giai doan 1
 -- Pham vi: tai khoan, hu ngan sach, thu nhap + phan bo,
 --          giao dich, du lieu phuc vu dashboard/bao cao.
--- Chua bao gom: chatbot AI, hu quy chung gia dinh, gamification,
---          what-if simulator, ke hoach tra no, OCR (Giai doan 2/3).
+-- Chua bao gom: chatbot AI, hu quy chung gia dinh, OCR (Giai doan 2/3).
 -- ============================================================
 
 -- ------------------------------------------------------------

@@ -3,7 +3,7 @@ import { Icon } from "@/components/icon";
 import { ProgressBar, ShareBar } from "@/components/ui";
 import { formatVND } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { aggregateFamilyJar, jarStats, listJarsWithSpent } from "@/lib/queries/jars";
+import { jarLabel, jarStats, listJarsWithSpent } from "@/lib/queries/jars";
 
 export default async function JarsPage() {
   const supabase = await createClient();
@@ -11,13 +11,13 @@ export default async function JarsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const allJars = user ? await listJarsWithSpent(supabase) : [];
-  const personalJars = allJars.filter((j) => !j.isShared);
-  const familyJars = allJars.filter((j) => j.isShared);
-
-  const displayJars = familyJars.length > 0 ? [...personalJars, aggregateFamilyJar(familyJars)] : personalJars;
-  const budgetSum = displayJars.reduce((s, j) => s + j.monthlyBudget, 0);
-  const needsAttention = displayJars.filter((j) => {
+  const displayJars = user ? await listJarsWithSpent(supabase) : [];
+  // Hu tiet kiem khong tinh vao "Tong ngan sach/tháng" hay "Can chu y" —
+  // khong phai tien de chi, va rut/vuot cua no khong phai dang "vuot ngan
+  // sach" kieu chi tieu thuong. Danh sach hang ben duoi van hien du.
+  const spendableJars = displayJars.filter((j) => !j.isSavings);
+  const budgetSum = spendableJars.reduce((s, j) => s + j.monthlyBudget, 0);
+  const needsAttention = spendableJars.filter((j) => {
     const s = jarStats(j, formatVND);
     return s.over || s.near || s.willExceed;
   }).length;
@@ -50,7 +50,7 @@ export default async function JarsPage() {
               <div className="mt-1.5 font-heading text-[30px] font-extrabold tabular-nums">{formatVND(budgetSum)}</div>
             </div>
           </div>
-          <ShareBar segments={displayJars.map((j) => ({ hue: j.color, share: budgetSum ? (j.monthlyBudget / budgetSum) * 100 : 0 }))} />
+          <ShareBar segments={spendableJars.map((j) => ({ hue: j.color, share: budgetSum ? (j.monthlyBudget / budgetSum) * 100 : 0 }))} />
 
           <div className="flex gap-2 border-b-2 border-divider pb-4 text-xs">
             <span className="border px-2.5 py-1.5" style={{ borderColor: "var(--color-accent)", background: "var(--color-accent)", color: "var(--color-bg)" }}>
@@ -62,11 +62,10 @@ export default async function JarsPage() {
           <div className="border border-divider">
             {displayJars.map((jar) => {
               const s = jarStats(jar, formatVND);
-              const isFamilyRow = jar.id === "__family__";
               return (
                 <Link
                   key={jar.id}
-                  href={isFamilyRow ? "/household" : `/jars/${jar.id}`}
+                  href={`/jars/${jar.id}`}
                   className="flex items-center gap-3 border-b border-divider px-4 py-2.5 last:border-b-0"
                   style={{ background: s.rowBg }}
                 >
@@ -78,10 +77,11 @@ export default async function JarsPage() {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-sm font-semibold">{jar.name}</span>
-                      {!isFamilyRow && jar.isShared && <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ quỹ chung" />}
+                      <span className="text-sm font-semibold">{jarLabel(jar)}</span>
+                      {jar.isShared && <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ quỹ chung" />}
+                      {jar.isSavings && <Icon name="piggy-bank" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ tiết kiệm" />}
                       <span className="ml-auto shrink-0 text-[13px] tabular-nums" style={{ color: s.inkColor }}>
-                        {s.leftWord} {s.leftAmount}
+                        {jar.isSavings && !s.over ? `đã tiết kiệm ${s.leftAmount}` : `${s.leftWord} ${s.leftAmount}`}
                       </span>
                     </div>
                     <div className="mt-1.5 flex items-center gap-2.5">

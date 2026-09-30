@@ -13,6 +13,7 @@ export type CreateJarInput = {
   monthlyBudget: number;
   alertAt80: boolean;
   rollover: boolean;
+  isSavings: boolean;
 };
 
 function revalidateJarPaths() {
@@ -43,8 +44,12 @@ export async function createJars(inputs: CreateJarInput[]): Promise<{ error?: st
       icon: input.icon,
       color: input.color,
       monthly_budget: input.monthlyBudget,
-      alert_at_80: input.alertAt80,
-      rollover: input.rollover,
+      // Hu tiet kiem luon bat rollover, tat canh bao 80% — ep o day (chot
+      // chan thuc su) thay vi tin theo toggle hang loat o client, vi
+      // isSavings la theo tung draft con alertAt80/rollover la global.
+      alert_at_80: input.isSavings ? false : input.alertAt80,
+      rollover: input.isSavings ? true : input.rollover,
+      is_savings: input.isSavings,
       is_shared: false,
       household_id: null,
     });

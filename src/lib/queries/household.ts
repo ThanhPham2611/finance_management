@@ -9,9 +9,13 @@ export type HouseholdMember = {
   isMe: boolean;
 };
 
-/** "Ten (biet danh)" neu co biet danh, khong thi chi ten — dung o moi noi hien thi thanh vien. */
-export function memberLabel(member: Pick<HouseholdMember, "name" | "nickname">): string {
-  return member.nickname ? `${member.name} (${member.nickname})` : member.name;
+/** Ten hien thi cua 1 thanh vien: chinh minh luon la "Ban"; nguoi khac thi
+ * biet danh (neu co) thay the hoan toan cho ten — khong ghep "Ten (biet
+ * danh)" vi ten mac dinh khi chua co ho so la "Nguoi than", ghep vao se
+ * thanh "Nguoi than (biet danh)" thay vi chi con "biet danh". */
+export function memberLabel(member: Pick<HouseholdMember, "name" | "nickname" | "isMe">): string {
+  if (member.isMe) return "Bạn";
+  return member.nickname ?? member.name;
 }
 
 export type HouseholdInfo = {

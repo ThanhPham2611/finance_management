@@ -11,6 +11,7 @@ export type RealJar = {
   isShared: boolean;
   alertAt80: boolean;
   rollover: boolean;
+  isSavings: boolean;
 };
 
 /** Dau thang hien tai theo gio VN, dang "YYYY-MM-01" (cot date trong Postgres). */
@@ -33,18 +34,21 @@ export async function listJarsWithSpent(supabase: SupabaseClient): Promise<RealJ
   const [{ data: jars, error: jarsError }, { data: txs, error: txError }] = await Promise.all([
     supabase
       .from("jars")
-      .select("id, name, icon, color, monthly_budget, is_shared, alert_at_80, rollover")
+      .select("id, name, icon, color, monthly_budget, is_shared, alert_at_80, rollover, is_savings")
       .eq("is_active", true)
       .order("sort_order", { ascending: true }),
-    supabase.from("transactions").select("jar_id, amount").gte("transaction_date", monthStart),
+    supabase.from("transactions").select("jar_id, amount, type").gte("transaction_date", monthStart),
   ]);
 
   if (jarsError) throw jarsError;
   if (txError) throw txError;
 
+  // Khoan nap ("deposit") tru NGUOC vao spent — voi hu tiet kiem day la co
+  // che duy nhat khien "con lai" tang len khi nap them tien giua thang.
   const spentByJar = new Map<string, number>();
   for (const t of txs ?? []) {
-    spentByJar.set(t.jar_id, (spentByJar.get(t.jar_id) ?? 0) + Number(t.amount));
+    const delta = t.type === "deposit" ? -Number(t.amount) : Number(t.amount);
+    spentByJar.set(t.jar_id, (spentByJar.get(t.jar_id) ?? 0) + delta);
   }
 
   return (jars ?? []).map((j) => ({
@@ -57,6 +61,7 @@ export async function listJarsWithSpent(supabase: SupabaseClient): Promise<RealJ
     isShared: j.is_shared,
     alertAt80: j.alert_at_80,
     rollover: j.rollover,
+    isSavings: j.is_savings,
   }));
 }
 
@@ -120,22 +125,13 @@ export function jarStats(jar: RealJar, formatVND: (n: number) => string, now: Da
   };
 }
 
-/** Gop tat ca hu gia dinh thanh 1 hu "ao" duy nhat de hien thi gon trong
- * cac danh sach/luoi hu ca nhan (vd /jars, dashboard) — tranh hien tung
- * hu gia dinh rieng le lam roi/trung cam giac voi hu ca nhan cua tung
- * nguoi. Dung cung voi jars.filter(j => !j.isShared) cho phan hu ca nhan. */
-export function aggregateFamilyJar(familyJars: RealJar[]): RealJar {
-  return {
-    id: "__family__",
-    name: "Hũ gia đình",
-    icon: "users",
-    color: "var(--color-accent)",
-    monthlyBudget: familyJars.reduce((s, j) => s + j.monthlyBudget, 0),
-    spent: familyJars.reduce((s, j) => s + j.spent, 0),
-    isShared: true,
-    alertAt80: true,
-    rollover: false,
-  };
+/** Ten hien thi cua 1 hu — them hau to "(gia đình)" cho hu quy chung, hoac
+ * "(tiết kiệm)" cho hu tiet kiem, de phan biet voi hu ca nhan cung ten (vd
+ * ca 2 deu co hu "An uong"), vi icon giong het nhau nen chi nhin icon la
+ * khong du de biet hu nao. 2 hau to khong bao gio cung xuat hien (hu tiet
+ * kiem luon la hu ca nhan, xem jar-edit-form.tsx). */
+export function jarLabel(jar: Pick<RealJar, "name" | "isShared" | "isSavings">): string {
+  return jar.isShared ? `${jar.name} (gia đình)` : jar.isSavings ? `${jar.name} (tiết kiệm)` : jar.name;
 }
 
 export function totalBudget(jars: RealJar[]): number {

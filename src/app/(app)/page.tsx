@@ -5,11 +5,10 @@ import { EditableTransaction } from "@/components/editable-transaction";
 import { Icon } from "@/components/icon";
 import { formatVND, vnNow } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
-import { aggregateFamilyJar, jarStats, listJarsWithSpent, totalBudget, totalSpent } from "@/lib/queries/jars";
+import { jarLabel, jarStats, listJarsWithSpent, totalBudget, totalSpent } from "@/lib/queries/jars";
 import { listRecentTransactions, listTransactionsSince, toYMD, weekdayShort } from "@/lib/queries/transactions";
 import { applyAutoRollovers, getPendingLeftovers, previousMonthLabel } from "@/lib/queries/leftover";
 import { LeftoverBanner } from "@/components/leftover-banner";
-import { computeStreak, getRecentMonthsPerformance } from "@/lib/queries/gamification";
 import { ProductTour } from "@/components/product-tour";
 
 function daysLeftInMonth(): number {
@@ -49,14 +48,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
 
   // Cac query doc doc lap nhau — chay song song thay vi noi duoi (moi lan
   // await la 1 round-trip toi Supabase).
-  const [jars, pendingLeftovers, streak, last7, recent, hasSeenTour] = await Promise.all([
+  const [jars, pendingLeftovers, last7, recent, hasSeenTour] = await Promise.all([
     jarsAfterRollover,
     getPendingLeftovers(supabase, user.id).catch(() => []),
-    // Streak gamification — chi doc, khong bao gio lam sap Dashboard neu loi
-    // (vd chua chay migration_008, hoac chua tung chia luong thang nao).
-    getRecentMonthsPerformance(supabase, user.id, 12)
-      .then(computeStreak)
-      .catch(() => 0),
     listTransactionsSince(supabase, toYMD(sevenDaysAgo)),
     listRecentTransactions(supabase, 4),
     // Product tour — nuot loi neu chua chay migration_010, coi nhu da xem
@@ -70,18 +64,21 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
       }
     })(),
   ]);
-  const personalJars = jars.filter((j) => !j.isShared);
-  const familyJars = jars.filter((j) => j.isShared);
-  const displayJars = familyJars.length > 0 ? [...personalJars, aggregateFamilyJar(familyJars)] : personalJars;
-  const budgetSum = totalBudget(jars);
-  const spentSum = totalSpent(jars);
+  // Hu tiet kiem khong tinh vao "Con lai" co the tieu — khong phai tien de
+  // chi, va rut/gan-het cua no khong nen kich hoat canh bao "vuot ngan
+  // sach" kieu chi tieu thuong. Luoi "Tinh trang cac hu" ben duoi van hien
+  // du (khong loc), chi doi cach hien thi rieng cho tung tile.
+  const spendableJars = jars.filter((j) => !j.isSavings);
+  const savingsJars = jars.filter((j) => j.isSavings);
+  const budgetSum = totalBudget(spendableJars);
+  const spentSum = totalSpent(spendableJars);
   const remaining = budgetSum - spentSum;
 
-  const overJar = jars.find((j) => jarStats(j, formatVND).over);
-  const nearJar = jars.find((j) => jarStats(j, formatVND).near);
+  const overJar = spendableJars.find((j) => jarStats(j, formatVND).over);
+  const nearJar = spendableJars.find((j) => jarStats(j, formatVND).near);
   // Canh bao du doan: hu chua vuot/gan vuot thuc te, nhung voi toc do chi
   // hien tai se vuot ngan sach truoc khi het thang.
-  const predictJar = jars.find((j) => j.id !== nearJar?.id && jarStats(j, formatVND).willExceed);
+  const predictJar = spendableJars.find((j) => j.id !== nearJar?.id && jarStats(j, formatVND).willExceed);
   const alert = [
     overJar && `${overJar.name} vượt ${jarStats(overJar, formatVND).leftAmount}`,
     nearJar && `${nearJar.name} đã dùng ${jarStats(nearJar, formatVND).pctLabel}`,
@@ -90,8 +87,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
     .filter(Boolean)
     .join(" · ");
 
+  // Khoan nap khong phai "da chi" — loai khoi bieu do chi 7 ngay qua.
+  const spendLast7 = last7.filter((t) => t.type !== "deposit");
   const totalsByDate = new Map<string, number>();
-  for (const t of last7) totalsByDate.set(t.transactionDate, (totalsByDate.get(t.transactionDate) ?? 0) + t.amount);
+  for (const t of spendLast7) totalsByDate.set(t.transactionDate, (totalsByDate.get(t.transactionDate) ?? 0) + t.amount);
   const week: { date: string; label: string; value: number }[] = [];
   for (let i = 6; i >= 0; i--) {
     const d = new Date(today);
@@ -108,12 +107,6 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
     <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
       <div className="flex flex-wrap items-center gap-3 border-b-2 border-divider pb-4">
         <h1 className="mr-auto text-xl md:text-2xl">Tổng quan {periodLabel()}</h1>
-        {streak > 0 && (
-          <Link href="/achievements" className="flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: "var(--color-accent-700)" }}>
-            <Icon name="flame" className="h-4 w-4" />
-            {streak} tháng
-          </Link>
-        )}
         <Link data-tour="add-transaction-desktop" href="/transactions/new" className="btn btn-primary hidden md:inline-flex">
           Nhập giao dịch
         </Link>
@@ -134,11 +127,16 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
               <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Còn lại</div>
               <div className="mt-1.5 font-heading text-4xl font-extrabold tabular-nums md:text-[40px]">{formatVND(remaining)}</div>
               <div className="mt-1 text-xs text-neutral-700">
-                VND · ngân sách {formatVND(budgetSum)} chia vào {displayJars.length} hũ · còn {daysLeft} ngày
+                VND · ngân sách {formatVND(budgetSum)} chia vào {spendableJars.length} hũ · còn {daysLeft} ngày
               </div>
+              {savingsJars.length > 0 && (
+                <div className="mt-1 text-xs text-neutral-700">
+                  Đã tiết kiệm được {formatVND(Math.max(0, totalBudget(savingsJars) - totalSpent(savingsJars)))} qua {savingsJars.length} hũ
+                </div>
+              )}
             </div>
             <div className="mt-4">
-              <BudgetSplitChart jars={displayJars} budgetSum={budgetSum} />
+              <BudgetSplitChart jars={spendableJars} budgetSum={budgetSum} />
             </div>
           </div>
 
@@ -153,28 +151,28 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
           <div>
             <div className="mb-2 text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Tình trạng các hũ</div>
             <div data-tour="jars-grid" className="grid grid-cols-2 gap-px border border-divider bg-divider sm:grid-cols-3">
-              {displayJars.map((jar, i) => {
+              {jars.map((jar, i) => {
                 const s = jarStats(jar, formatVND);
-                const isLastOdd = i === displayJars.length - 1 && displayJars.length % 2 === 1;
-                const isFamilyTile = jar.id === "__family__";
+                const isLastOdd = i === jars.length - 1 && jars.length % 2 === 1;
                 return (
                   <Link
                     key={jar.id}
-                    href={isFamilyTile ? "/household" : `/jars/${jar.id}`}
+                    href={`/jars/${jar.id}`}
                     className={`block p-3.5 ${isLastOdd ? "col-span-2 sm:col-span-1" : ""}`}
                     style={{ background: s.tileBg }}
                   >
                     <div className="flex items-center gap-2">
                       <Icon name={jar.icon} className="h-4 w-4" style={{ color: jar.color }} />
-                      <span className="text-[12px] font-semibold">{jar.name}</span>
-                      {!isFamilyTile && jar.isShared && <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ quỹ chung" />}
+                      <span className="text-[12px] font-semibold">{jarLabel(jar)}</span>
+                      {jar.isShared && <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ quỹ chung" />}
+                      {jar.isSavings && <Icon name="piggy-bank" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ tiết kiệm" />}
                     </div>
                     <div className="mt-2 font-heading text-[19px] font-extrabold tabular-nums" style={{ color: s.inkColor }}>
-                      {s.over ? "−" : ""}
+                      {!jar.isSavings && s.over ? "−" : ""}
                       {s.leftAmount}
                     </div>
                     <div className="text-[11px] text-neutral-700 tabular-nums">
-                      {s.leftWord}, trên {formatVND(jar.monthlyBudget)}
+                      {jar.isSavings ? "đã tiết kiệm, cộng dồn" : `${s.leftWord}, trên ${formatVND(jar.monthlyBudget)}`}
                     </div>
                     <div className="mt-2.5 flex bg-neutral-300" style={{ height: 5 }}>
                       <div style={{ width: `${s.pct}%`, background: s.barColor }} />
@@ -204,10 +202,13 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
               <div className="flex flex-col">
                 {recent.length === 0 && <p className="py-2.5 text-[13px] text-neutral-700">Chưa có giao dịch nào.</p>}
                 {recent.map((t) => (
-                  <EditableTransaction key={t.id} transaction={t} jars={jars}>
+                  <EditableTransaction key={t.id} transaction={t} jars={jars} canDelete={t.userId === user.id}>
                     <div className="flex items-center gap-2.5 border-b border-divider py-2.5 text-[13px] last:border-b-0">
                       <span className="flex-1">{t.note || t.jarName}</span>
-                      <span className="tabular-nums">{formatVND(t.amount)}</span>
+                      <span className="tabular-nums" style={t.type === "deposit" ? { color: "var(--color-green-ink)" } : undefined}>
+                        {t.type === "deposit" ? "+" : ""}
+                        {formatVND(t.amount)}
+                      </span>
                     </div>
                   </EditableTransaction>
                 ))}

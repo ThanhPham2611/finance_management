@@ -13,6 +13,7 @@ export type UpdateJarInput = {
   monthlyBudget: number;
   alertAt80: boolean;
   rollover: boolean;
+  isSavings: boolean;
 };
 
 function revalidateJarPaths(jarId: string) {
@@ -41,10 +42,15 @@ export async function updateJar(input: UpdateJarInput): Promise<{ error?: string
   const { data: existing, error: existingError } = await supabase.from("jars").select("is_shared").eq("id", input.jarId).maybeSingle();
   if (existingError) return { error: existingError.message };
 
+  // Hu tiet kiem luon bat rollover, tat canh bao 80% — ep o day (chot chan
+  // thuc su, khong chi tin UI da an toggle). Hu gia dinh khong bao gio la
+  // hu tiet kiem, du client co gui gi len (tu ve du UI da an toggle).
+  const savings = existing?.is_shared ? false : input.isSavings;
   const patch: Record<string, unknown> = {
     name,
-    alert_at_80: input.alertAt80,
-    rollover: input.rollover,
+    alert_at_80: savings ? false : input.alertAt80,
+    rollover: savings ? true : input.rollover,
+    is_savings: savings,
   };
   if (!existing?.is_shared) {
     patch.monthly_budget = input.monthlyBudget;

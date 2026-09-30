@@ -30,7 +30,7 @@ export async function applyAllocation(input: ApplyAllocationInput): Promise<{ er
 
   // Luu lai lich su thu nhap + phan bo theo thang (bang incomes/jar_allocations,
   // co san trong schema nhung truoc day chua duoc ghi) — de cac tinh nang sau
-  // (tien du cuoi thang, what-if simulator) tinh duoc CHINH XAC dua tren so
+  // (vd tien du cuoi thang) tinh duoc CHINH XAC dua tren so
   // that da ap dung cho thang do, thay vi xap xi bang jars.monthly_budget HIEN
   // TAI (co the da bi doi lai sau khi chia luong). Bam "Ap dung" nhieu lan
   // trong cung 1 thang se GHI DE ban ghi income cu (upsert theo user_id +

@@ -50,6 +50,12 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
               Quỹ chung
             </span>
           )}
+          {jar.isSavings && (
+            <span className="flex items-center gap-1 border border-divider px-1.5 py-0.5 text-[10px] font-normal tracking-[0.08em] text-neutral-700 uppercase">
+              <Icon name="piggy-bank" className="h-3 w-3" />
+              Tiết kiệm
+            </span>
+          )}
         </h1>
         <Link href={`/jars/${jar.id}/edit`} aria-label="Sửa hũ" className="text-neutral-700 hover:text-accent">
           <Icon name="pencil" className="h-[18px] w-[18px]" />
@@ -61,10 +67,10 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
           <Icon name={jar.icon} className="h-[22px] w-[22px]" />
         </div>
         <div className="flex-1">
-          <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Còn được chi</div>
+          <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">{jar.isSavings ? "Đã tiết kiệm được" : "Còn được chi"}</div>
           <div className="mt-1 font-heading text-[38px] leading-none font-extrabold tabular-nums">{formatVND(Math.max(0, s.left))}</div>
           <div className="mt-1 text-xs tabular-nums text-neutral-700">
-            VND · khoảng {formatVND(Math.max(0, s.left) / daysLeft)}/ngày trong {daysLeft} ngày còn lại
+            {jar.isSavings ? "VND · tự động cộng dồn qua các tháng, không reset" : `VND · khoảng ${formatVND(Math.max(0, s.left) / daysLeft)}/ngày trong ${daysLeft} ngày còn lại`}
           </div>
         </div>
       </div>
@@ -73,13 +79,13 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
         <ProgressBar pct={s.pct} color={s.barColor} height={10} />
         <div className="mt-1.5 flex justify-between text-[11px] tabular-nums text-neutral-700">
           <span>
-            Đã chi {formatVND(jar.spent)} · {s.pctLabel}
+            {jar.isSavings ? "Đã rút" : "Đã chi"} {formatVND(Math.max(0, jar.spent))} · {s.pctLabel}
           </span>
-          <span>Ngân sách {formatVND(jar.monthlyBudget)}</span>
+          <span>{jar.isSavings ? "Tổng đã gom" : "Ngân sách"} {formatVND(jar.monthlyBudget)}</span>
         </div>
       </div>
 
-      {(s.over || s.near || s.willExceed) && (
+      {!jar.isSavings && (s.over || s.near || s.willExceed) && (
         <Banner icon="info" tone={s.over ? "accent" : "amber"}>
           {s.over
             ? `Đã vượt ngân sách ${formatVND(Math.abs(s.left))}.`
@@ -107,16 +113,19 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
         <div className="flex flex-col">
           {transactions.length === 0 && <p className="py-3 text-[13px] text-neutral-700">Chưa có giao dịch nào trong hũ này.</p>}
           {transactions.map((t) => (
-            <EditableTransaction key={t.id} transaction={t} jars={jars}>
+            <EditableTransaction key={t.id} transaction={t} jars={jars} canDelete={t.userId === user.id}>
               <div className="flex items-center gap-3 border-t border-divider py-2.5">
                 <div className="flex-1">
-                  <div className="text-[13px] font-semibold">{t.note || "Không ghi chú"}</div>
+                  <div className="text-[13px] font-semibold">{t.note || (t.type === "deposit" ? "Thu" : "Không ghi chú")}</div>
                   <div className="text-[11px] text-neutral-700">
                     {formatDayLabel(t.transactionDate)}
                     {household && ` · ${nameOf(household.members, t.userId)}`}
                   </div>
                 </div>
-                <div className="text-[13px] tabular-nums">{formatVND(t.amount)}</div>
+                <div className="text-[13px] tabular-nums" style={t.type === "deposit" ? { color: "var(--color-green-ink)" } : undefined}>
+                  {t.type === "deposit" ? "+" : ""}
+                  {formatVND(t.amount)}
+                </div>
               </div>
             </EditableTransaction>
           ))}
@@ -124,8 +133,11 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
       </div>
 
       <div className="flex gap-2.5 border-t-2 border-divider pt-3">
-        <Link href={`/transactions/new?jar=${jar.id}`} className="btn btn-primary flex-1 justify-center">
+        <Link href={`/transactions/new?jar=${jar.id}`} className="btn btn-secondary flex-1 justify-center">
           Nhập chi
+        </Link>
+        <Link href={`/transactions/new?jar=${jar.id}&type=deposit`} className="btn btn-primary flex-1 justify-center">
+          Nhập thu
         </Link>
       </div>
     </div>

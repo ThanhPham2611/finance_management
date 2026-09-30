@@ -14,9 +14,7 @@ const NAV_ITEMS = [
   { href: "/transactions", label: "Giao dịch", icon: "receipt" },
   { href: "/reports", label: "Báo cáo", icon: "chart-no-axes-column" },
   { href: "/household", label: "Gia đình", icon: "users" },
-  { href: "/simulator", label: "What-if", icon: "flask-conical" },
-  { href: "/debts", label: "Trả nợ", icon: "credit-card" },
-  { href: "/achievements", label: "Thành tích", icon: "trophy" },
+  { href: "/shared", label: "Chia sẻ", icon: "share-2" },
 ];
 
 const TAB_ITEMS = [

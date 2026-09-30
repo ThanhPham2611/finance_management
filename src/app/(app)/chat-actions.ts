@@ -23,8 +23,9 @@ export type SendChatMessageResult = {
 // gop co on khong", khong chi bo trong pham vi cac hu trong app.
 const SYSTEM_PROMPT =
   'Ban la tro ly tai chinh trong 1 app quan ly chi tieu ca nhan kieu "hu ngan sach". Nhiem vu: ' +
-  '(1) Neu nguoi dung mo ta 1 khoan chi tieu bang ngon ngu tu nhien (vd "an trua 50k", "mua ao 300k"), ' +
-  'goi tool "log_transaction" de ghi lai, tu chon hu phu hop nhat trong danh sach hu hop le duoc cung cap ' +
+  '(1) Neu nguoi dung mo ta 1 khoan tien bang ngon ngu tu nhien (vd "an trua 50k", "mua ao 300k", "duoc tra 200k"), ' +
+  'goi tool "log_transaction" de ghi lai. Khoan chi de direction="chi" (tru tien khoi hu). Khoan thu — luong, duoc cho, ban do — de direction="thu" (cong tien vao hu). ' +
+  "Tu chon hu phu hop nhat trong danh sach hu hop le duoc cung cap " +
   "— neu khong chac hu nao phu hop, chon hu co ten gan nghia nhat va noi ro ly do trong note. " +
   '(2) Neu nguoi dung hoi ve 1 quyet dinh vay/mua sam lon co tra gop (vd "vay mua xe/nha co on khong", ' +
   '"tra gop X trieu lai Y%/nam trong Z nam thi sao"), LUON goi tool "evaluate_loan" de tinh CHINH XAC khoan ' +
@@ -45,13 +46,14 @@ const MAX_HISTORY_TURNS = 8;
 
 const LOG_TRANSACTION_TOOL: ClaudeToolDef = {
   name: "log_transaction",
-  description: "Ghi 1 giao dịch chi tiêu vào 1 hũ cá nhân cụ thể.",
+  description: "Ghi 1 giao dịch vào 1 hũ cá nhân. Chi trừ tiền khỏi hũ, thu cộng tiền vào hũ.",
   input_schema: {
     type: "object",
     properties: {
       jarName: { type: "string", description: "Tên hũ, phải khớp 1 trong danh sách hũ hợp lệ." },
       amount: { type: "number", description: "Số tiền VND, luôn dương." },
       note: { type: "string", description: "Ghi chú ngắn, ví dụ món gì." },
+      direction: { type: "string", enum: ["chi", "thu"], description: "chi trừ tiền khỏi hũ (mặc định). thu cộng tiền vào hũ." },
     },
     required: ["jarName", "amount"],
   },
@@ -114,7 +116,7 @@ export async function sendChatMessage(message: string, history: ChatTurn[]): Pro
     const toolUse = response.content.find((b): b is Extract<typeof b, { type: "tool_use" }> => b.type === "tool_use");
 
     if (toolUse?.name === "log_transaction") {
-      const input = toolUse.input as { jarName: string; amount: number; note?: string };
+      const input = toolUse.input as { jarName: string; amount: number; note?: string; direction?: string };
       const jar = personalJars.find((j) => j.name.trim().toLowerCase() === input.jarName.trim().toLowerCase());
 
       if (!jar) {
@@ -129,6 +131,7 @@ export async function sendChatMessage(message: string, history: ChatTurn[]): Pro
         jar_id: jar.id,
         amount: input.amount,
         note: input.note?.trim() || null,
+        type: input.direction === "thu" ? "deposit" : "expense",
         // Nhu createTransaction: ngay theo gio VN, khong de DB tu dien UTC.
         transaction_date: vnToday(),
       });
@@ -141,7 +144,7 @@ export async function sendChatMessage(message: string, history: ChatTurn[]): Pro
       revalidatePath("/reports");
 
       return {
-        reply: `Đã ghi ${input.amount.toLocaleString("vi-VN")}đ vào hũ "${jar.name}"${input.note ? ` (${input.note})` : ""}.`,
+        reply: `Đã ${input.direction === "thu" ? "thu" : "ghi"} ${input.amount.toLocaleString("vi-VN")}đ vào hũ "${jar.name}"${input.note ? ` (${input.note})` : ""}.`,
         loggedTransaction: { jarName: jar.name, amount: input.amount },
       };
     }
