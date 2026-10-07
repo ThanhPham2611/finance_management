@@ -4,7 +4,10 @@
     "slug": "hu-finance",
     "scheme": "hu",
     "version": "1.0.0",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "orientation": "default",
     "userInterfaceStyle": "light",
     "ios": {
@@ -14,12 +17,33 @@
     "android": {
       "package": "vn.hu.finance",
       "adaptiveIcon": {
-        "backgroundColor": "#F5F3ED"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ec3013"
       }
     },
-    "plugins": ["expo-router", "expo-sqlite"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 140,
+          "backgroundColor": "#ec3013",
+          "resizeMode": "contain"
+        }
+      ],
+      "expo-sqlite",
+      "@react-native-community/datetimepicker"
+    ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "50170148-f070-4d20-9544-0773dbc974e7"
+      }
+    },
+    "icon": "./assets/icon.png"
   }
 }

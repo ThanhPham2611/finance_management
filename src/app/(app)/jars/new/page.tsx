@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { presetColor } from "@hu/domain";
 import { BudgetField } from "@/components/budget-field";
 import { Icon } from "@/components/icon";
 import { Banner, Toggle } from "@/components/ui";
@@ -72,7 +73,7 @@ export default function NewJarPage() {
       drafts.map((d) => ({
         name: d.name || "Hũ mới",
         icon: d.icon,
-        color: d.hue,
+        color: presetColor(d.presetName, d.hue),
         monthlyBudget: d.budget,
         alertAt80,
         rollover,

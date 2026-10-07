@@ -16,6 +16,10 @@ export function buildOverviewSummary(jars: Jar[]) {
   };
 }
 
+export function jarLabel(jar: Pick<Jar, "name" | "isShared" | "isSavings">): string {
+  return jar.isShared ? `${jar.name} (gia đình)` : jar.isSavings ? `${jar.name} (tiết kiệm)` : jar.name;
+}
+
 export function amountFromText(value: string): number {
   const digits = value.replace(/\D/g, "");
   return digits ? Number(digits) : 0;

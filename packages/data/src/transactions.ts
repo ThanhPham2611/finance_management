@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@hu/database";
 import {
   createTransactionInputSchema,
+  safeColor,
   updateTransactionInputSchema,
   vietnamToday,
   type CreateTransactionInput,
@@ -57,7 +58,7 @@ export function mapTransactionWithJar(row: TransactionJoinRow): TransactionWithJ
     ...mapTransaction(row),
     jarName: jar?.name ?? "Không rõ hũ",
     jarIcon: jar?.icon ?? "wallet",
-    jarColor: jar?.color ?? "#9A5B13",
+    jarColor: safeColor(jar?.color),
   };
 }
 
@@ -72,6 +73,31 @@ export async function listTransactions(
     .gte("transaction_date", from);
   if (toExclusive) query = query.lt("transaction_date", toExclusive);
   const { data, error } = await query.order("transaction_date", { ascending: false }).order("created_at", { ascending: false });
+  if (error) throw error;
+  return ((data ?? []) as unknown as TransactionJoinRow[]).map(mapTransactionWithJar);
+}
+
+/** Giao dịch gần nhất của 1 hũ (mọi thời điểm). Không lọc theo user_id: hũ gia đình hiện cả phần của thành viên khác, RLS lo quyền xem. */
+export async function listTransactionsForJar(client: SupabaseClient<Database>, jarId: string, limit = 30): Promise<Transaction[]> {
+  const { data, error } = await client
+    .from("transactions")
+    .select("id, jar_id, amount, note, transaction_date, user_id, type")
+    .eq("jar_id", jarId)
+    .order("transaction_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (error) throw error;
+  return (data ?? []).map(mapTransaction);
+}
+
+/** Giao dịch gần nhất user xem được (mọi tháng), kèm thông tin hũ để hiển thị. */
+export async function listRecentTransactions(client: SupabaseClient<Database>, limit = 4): Promise<TransactionWithJar[]> {
+  const { data, error } = await client
+    .from("transactions")
+    .select("id, jar_id, amount, note, transaction_date, user_id, type, jars(name, icon, color)")
+    .order("transaction_date", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(limit);
   if (error) throw error;
   return ((data ?? []) as unknown as TransactionJoinRow[]).map(mapTransactionWithJar);
 }

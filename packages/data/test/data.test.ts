@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildJarPatch, createTransaction, mapJarsWithSpent, normalizeJarForWrite } from "../src/index";
+import { buildJarPatch, createTransaction, listTransactionsForJar, mapJarsWithSpent, mapTransactionWithJar, normalizeJarForWrite } from "../src/index";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 const JAR_ID = "11111111-1111-4111-8111-111111111111";
@@ -101,5 +101,43 @@ describe("transaction mutations", () => {
       type: "expense",
       transaction_date: "2026-09-30",
     });
+  });
+});
+
+describe("color safety on read", () => {
+  it("replaces colors React Native cannot draw (web used to store oklch)", () => {
+    const [jar] = mapJarsWithSpent(
+      [{ id: JAR_ID, name: "Ăn uống", icon: "utensils", color: "oklch(0.55 0.12 40)", monthly_budget: 1, is_shared: false, alert_at_80: true, rollover: false, is_savings: false }],
+      [],
+    );
+    expect(jar?.color).toBe("#9A5B13");
+
+    const tx = mapTransactionWithJar({ id: "t", jar_id: JAR_ID, amount: 1, note: null, transaction_date: "2026-10-01", user_id: USER_ID, type: "expense", jars: { name: "Ăn uống", icon: null, color: "var(--color-accent)" } });
+    expect(tx.jarColor).toBe("#9A5B13");
+  });
+});
+
+describe("listTransactionsForJar", () => {
+  it("returns the newest transactions of one jar, mapped to the domain shape", async () => {
+    const calls: Record<string, unknown[]> = {};
+    const chain = {
+      select: (cols: string) => ((calls.select = [cols]), chain),
+      eq: (col: string, value: string) => ((calls.eq = [col, value]), chain),
+      order: (col: string, opts: object) => ((calls.order = [...(calls.order ?? []), col, opts]), chain),
+      limit: async (n: number) => ((calls.limit = [n]), { data: [{ id: "t1", jar_id: JAR_ID, amount: "50000", note: "Phở", transaction_date: "2026-10-05", user_id: USER_ID, type: "expense" }], error: null }),
+    };
+    const rows = await listTransactionsForJar({ from: () => chain } as never, JAR_ID);
+
+    expect(rows).toEqual([{ id: "t1", jarId: JAR_ID, amount: 50_000, note: "Phở", transactionDate: "2026-10-05", userId: USER_ID, type: "expense" }]);
+    expect(calls.eq).toEqual(["jar_id", JAR_ID]);
+    expect(calls.limit).toEqual([30]);
+    expect(calls.order?.filter((value) => typeof value === "string")).toEqual(["transaction_date", "created_at"]);
+  });
+
+  it("surfaces Supabase errors instead of returning an empty list", async () => {
+    const chain: Record<string, unknown> = {};
+    for (const name of ["select", "eq", "order"]) chain[name] = () => chain;
+    chain.limit = async () => ({ data: null, error: new Error("boom") });
+    await expect(listTransactionsForJar({ from: () => chain } as never, JAR_ID)).rejects.toThrow("boom");
   });
 });

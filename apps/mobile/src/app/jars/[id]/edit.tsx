@@ -16,7 +16,7 @@ export default function EditJarScreen() {
   return (
     <>
       <Stack.Screen options={{ title: "Chỉnh sửa hũ" }} />
-      <JarForm initial={{ name: jar.name, monthlyBudget: jar.monthlyBudget, icon: jar.icon, color: jar.color, alertAt80: jar.alertAt80, rollover: jar.rollover, isSavings: jar.isSavings }} submitLabel="Lưu thay đổi" busy={mutation.isPending} serverError={mutation.error?.message} onSubmit={(value) => mutation.mutate({ id: jar.id, ...value }, { onSuccess: () => router.back() })} />
+      <JarForm shared={jar.isShared} initial={{ name: jar.name, monthlyBudget: jar.monthlyBudget, icon: jar.icon, color: jar.color, alertAt80: jar.alertAt80, rollover: jar.rollover, isSavings: jar.isSavings }} submitLabel="Lưu thay đổi" busy={mutation.isPending} serverError={mutation.error?.message} onSubmit={(value) => mutation.mutate({ id: jar.id, ...value }, { onSuccess: () => router.back() })} />
     </>
   );
 }

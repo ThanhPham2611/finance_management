@@ -17,8 +17,10 @@ export function AuthField({
 }) {
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+      {/* Ô nhập mang tên "label" cho trình đọc màn hình; nhãn hiển thị bị ẩn để không đọc hai lần. */}
+      <Text accessibilityElementsHidden importantForAccessibility="no" style={styles.label}>{label}</Text>
       <TextInput
+        accessibilityLabel={label}
         value={value}
         onChangeText={onChangeText}
         secureTextEntry={secureTextEntry}

@@ -1,0 +1,8 @@
+appId: vn.hu.finance
+name: Reports ranges
+---
+- runFlow: subflows/sign-in.yaml
+- tapOn: "Báo cáo, tab.*"
+- assertVisible: "Tháng này"
+- tapOn: "Tuần này"
+- tapOn: "6 tháng"

@@ -1,17 +1,10 @@
 appId: vn.hu.finance
 name: Auth and primary navigation
 ---
-- launchApp:
-    clearState: true
-- tapOn: "Email"
-- inputText: ${MAESTRO_TEST_EMAIL}
-- tapOn: "Mật khẩu"
-- inputText: ${MAESTRO_TEST_PASSWORD}
-- tapOn: "Đăng nhập"
-- assertVisible: "Tổng quan tháng này"
-- tapOn: "Hũ"
+- runFlow: subflows/sign-in.yaml
+- tapOn: "Hũ, tab.*"
 - assertVisible: "Hũ của bạn"
-- tapOn: "Giao dịch"
+- tapOn: "Giao dịch, tab.*"
 - assertVisible: "Giao dịch"
-- tapOn: "Thêm"
+- tapOn: "Thêm, tab.*"
 - assertVisible: "Tài khoản"

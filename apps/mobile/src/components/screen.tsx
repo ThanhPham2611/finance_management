@@ -7,6 +7,8 @@ export function Screen({ children, ...props }: PropsWithChildren<ScrollViewProps
     <ScrollView
       contentInsetAdjustmentBehavior="automatic"
       keyboardShouldPersistTaps="handled"
+      // Bàn phím mở thì chừa chỗ để cuộn tới nút Lưu/Đăng nhập nằm dưới ô đang nhập.
+      automaticallyAdjustKeyboardInsets
       style={styles.root}
       contentContainerStyle={styles.content}
       {...props}

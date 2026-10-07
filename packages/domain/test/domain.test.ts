@@ -1,11 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildMonthGrid,
   calculateJarStats,
+  formatCompactMoney,
   createJarInputSchema,
   createMonthWindow,
   createTransactionInputSchema,
   formatMoney,
   groupTransactionsByDay,
+  JAR_PRESETS,
+  safeColor,
 } from "../src/index";
 
 const JAR_ID = "11111111-1111-4111-8111-111111111111";
@@ -113,5 +117,56 @@ describe("input validation", () => {
       transactionDate: "2026-02-31",
     });
     expect(result.success).toBe(false);
+  });
+});
+
+describe("calendar grid", () => {
+  it("starts weeks on Monday and pads to full weeks", () => {
+    const grid = buildMonthGrid("2026-10"); // 1/10/2026 là Thứ Năm
+    expect(grid).toHaveLength(35);
+    expect(grid.slice(0, 3)).toEqual([null, null, null]);
+    expect(grid[3]).toEqual({ date: "2026-10-01", day: 1 });
+    expect(grid[33]).toEqual({ date: "2026-10-31", day: 31 });
+    expect(grid[34]).toBeNull();
+  });
+
+  it("handles February in a leap year", () => {
+    expect(buildMonthGrid("2028-02").filter(Boolean)).toHaveLength(29);
+  });
+
+  it("shortens amounts for narrow cells", () => {
+    expect([950, 45_000, 45_500, 1_200_000, 12_000_000].map(formatCompactMoney)).toEqual(["950", "45k", "45,5k", "1,2tr", "12tr"]);
+  });
+});
+
+describe("jar presets", () => {
+  it("every preset can be saved through the create-jar schema", () => {
+    for (const preset of JAR_PRESETS) {
+      const result = createJarInputSchema.safeParse({ name: preset.name, icon: preset.icon, color: preset.color, monthlyBudget: 0 });
+      expect(result.success, preset.name).toBe(true);
+    }
+  });
+
+  it("only the savings preset is named Tiết kiệm, and names are unique", () => {
+    const names = JAR_PRESETS.map((preset) => preset.name);
+    expect(new Set(names).size).toBe(names.length);
+    expect(names).toContain("Tiết kiệm");
+  });
+
+  it("keeps hex colors and replaces CSS-only ones React Native cannot draw", () => {
+    expect(safeColor("#174C3C")).toBe("#174C3C");
+    expect(safeColor("oklch(0.52 0.10 155)")).toBe("#9A5B13");
+    expect(safeColor("var(--color-accent)", "#000000")).toBe("#000000");
+    expect(safeColor(null)).toBe("#9A5B13");
+  });
+});
+
+describe("jar stats for savings jars", () => {
+  it("never reports a negative percentage when deposits exceed withdrawals", () => {
+    const jar = { id: "s", name: "Quỹ", icon: "savings", color: "#307A4F", monthlyBudget: 1_000_000, spent: -500_000, isShared: false, alertAt80: false, rollover: true, isSavings: true };
+    const stats = calculateJarStats(jar, new Date(2026, 8, 10));
+    expect(stats.pct).toBe(0);
+    expect(stats.left).toBe(1_500_000);
+    expect(stats.over).toBe(false);
   });
 });

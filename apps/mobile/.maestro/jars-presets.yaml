@@ -1,0 +1,26 @@
+appId: vn.hu.finance
+name: Create a jar with the wizard, then archive it
+---
+- runFlow: subflows/sign-in.yaml
+- tapOn: "Hũ, tab.*"
+- tapOn: "Tạo hũ"
+- assertVisible: "Chọn các hũ muốn tạo"
+- tapOn: "Tự đặt tên, .*"
+- tapOn: "Tiếp tục"
+- assertVisible: "Bước 2/2"
+- tapOn: "Tên hũ 1"
+- inputText: "Maestro hũ"
+- tapOn: "Bước 2/2"
+- tapOn: "1.000.000"
+- scrollUntilVisible:
+    element: "Lưu 1 hũ"
+- tapOn: "Lưu 1 hũ"
+- assertVisible: "Đã tạo 1 hũ"
+- tapOn: "Về danh sách hũ"
+- assertVisible: "Maestro hũ.*"
+# Dọn dữ liệu thử: ngừng sử dụng hũ vừa tạo (giao dịch cũ vẫn giữ).
+- tapOn: "Maestro hũ.*"
+- assertVisible: "Nhập chi"
+- tapOn: "Ngừng sử dụng hũ"
+- tapOn: "Ngừng sử dụng"
+- assertNotVisible: "Maestro hũ.*"

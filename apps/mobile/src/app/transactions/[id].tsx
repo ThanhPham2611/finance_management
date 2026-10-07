@@ -5,12 +5,15 @@ import { EmptyState, ErrorState, TextButton } from "@/components/finance-ui";
 import { LoadingScreen, Screen } from "@/components/screen";
 import { useDeleteTransaction, useJars, useTransactions, useUpdateTransaction } from "@/features/finance/hooks";
 import { TransactionForm } from "@/features/finance/transaction-form";
+import { useAuth } from "@/providers/auth-provider";
 
 export default function EditTransactionScreen() {
-  const params = useLocalSearchParams<{ id: string }>();
+  const params = useLocalSearchParams<{ id: string; ym?: string }>();
   const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const ym = Array.isArray(params.ym) ? params.ym[0] : params.ym;
+  const { session } = useAuth();
   const jars = useJars();
-  const transactions = useTransactions();
+  const transactions = useTransactions(ym);
   const update = useUpdateTransaction();
   const remove = useDeleteTransaction();
   if (jars.isLoading || transactions.isLoading) return <LoadingScreen />;
@@ -25,10 +28,13 @@ export default function EditTransactionScreen() {
     ]);
   }
 
+  // Chỉ người tạo mới xóa được (deleteTransaction lọc theo user_id) — giao dịch của thành viên khác trong hũ gia đình chỉ hiện nút khi là của mình.
+  const canDelete = transaction.userId === session?.user.id;
+
   return (
     <>
       <Stack.Screen options={{ title: "Sửa giao dịch" }} />
-      <TransactionForm jars={jars.data ?? []} initial={{ jarId: transaction.jarId, amount: transaction.amount, note: transaction.note ?? "", type: transaction.type }} submitLabel="Lưu thay đổi" busy={update.isPending} serverError={update.error?.message ?? remove.error?.message} footer={<TextButton label={remove.isPending ? "Đang xóa…" : "Xóa giao dịch"} icon="delete-outline" destructive onPress={confirmDelete} />} onSubmit={(value) => update.mutate({ id: transaction.id, transactionDate: transaction.transactionDate || vietnamToday(), ...value }, { onSuccess: () => router.back() })} />
+      <TransactionForm jars={jars.data ?? []} initial={{ jarId: transaction.jarId, amount: transaction.amount, note: transaction.note ?? "", type: transaction.type, transactionDate: transaction.transactionDate || vietnamToday() }} submitLabel="Lưu thay đổi" busy={update.isPending} serverError={update.error?.message ?? remove.error?.message} footer={canDelete ? <TextButton label={remove.isPending ? "Đang xóa…" : "Xóa giao dịch"} icon="delete-outline" destructive onPress={confirmDelete} /> : undefined} onSubmit={(value) => update.mutate({ id: transaction.id, ...value, transactionDate: value.transactionDate ?? transaction.transactionDate }, { onSuccess: () => router.back() })} />
     </>
   );
 }

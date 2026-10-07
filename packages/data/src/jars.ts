@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@hu/database";
-import { createJarInputSchema, updateJarInputSchema, type CreateJarInput, type Jar, type UpdateJarInput } from "@hu/domain";
+import { createJarInputSchema, safeColor, updateJarInputSchema, type CreateJarInput, type Jar, type UpdateJarInput } from "@hu/domain";
 import { dataFailure, dataSuccess, type DataResult } from "./result";
 
 type JarRow = Pick<
@@ -21,7 +21,7 @@ export function mapJarsWithSpent(jars: JarRow[], transactions: SpendRow[]): Jar[
     id: jar.id,
     name: jar.name,
     icon: jar.icon ?? "wallet",
-    color: jar.color ?? "#9A5B13",
+    color: safeColor(jar.color),
     monthlyBudget: Number(jar.monthly_budget),
     spent: spentByJar.get(jar.id) ?? 0,
     isShared: jar.is_shared,

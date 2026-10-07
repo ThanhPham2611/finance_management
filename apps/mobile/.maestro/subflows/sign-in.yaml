@@ -1,0 +1,18 @@
+appId: vn.hu.finance
+name: Sign in with the test account
+---
+- launchApp:
+    clearState: true
+- tapOn: "Email"
+- inputText: ${MAESTRO_TEST_EMAIL}
+# Bàn phím che ô Mật khẩu và nút Đăng nhập: bấm vào dòng chữ tĩnh để đóng bàn phím (hideKeyboard của Maestro không ổn định trên iOS).
+- tapOn: "Chào bạn quay lại"
+- tapOn: "Mật khẩu"
+- inputText: ${MAESTRO_TEST_PASSWORD}
+- tapOn: "Chào bạn quay lại"
+- tapOn: "Đăng nhập"
+# iOS có thể hỏi "Lưu mật khẩu?" và che màn hình; bỏ qua nếu hiện.
+- tapOn:
+    text: "Để sau"
+    optional: true
+- assertVisible: "Tổng quan tháng này"

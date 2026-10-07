@@ -25,7 +25,8 @@ export function calculateJarStats(jar: Jar, now: Date): JarStats {
 
   return {
     left,
-    pct: Math.min(100, Math.round(ratio * 100)),
+    // Hũ tiết kiệm nạp nhiều hơn rút có spent âm; phần trăm không được âm (nhãn "-50%", chiều rộng thanh tiến độ âm).
+    pct: Math.max(0, Math.min(100, Math.round(ratio * 100))),
     over,
     near,
     willExceed,

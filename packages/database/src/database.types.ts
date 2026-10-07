@@ -75,12 +75,30 @@ export type Database = {
         { id: string; owner_id: string; viewer_id: string; status: "pending" | "accepted" | "declined" | "revoked"; created_at: string; responded_at: string | null },
         { id?: string; owner_id: string; viewer_id: string; status?: "pending" | "accepted" | "declined" | "revoked"; created_at?: string; responded_at?: string | null }
       >;
+      // Hand-written subset (only the columns the apps read/write). Source of truth:
+      // "Claude outputs/migration_003..010_*.sql". `npm run db:types` replaces these
+      // with generated definitions once the CLI is linked.
+      household_members: Table<
+        { household_id: string; user_id: string; nickname: string | null },
+        { household_id: string; user_id: string; nickname?: string | null }
+      >;
+      jar_contributions: Table<
+        { jar_id: string; user_id: string; period_month: string; amount: number },
+        { jar_id: string; user_id: string; period_month: string; amount: number }
+      >;
+      jar_leftover_events: Table<
+        { user_id: string; jar_id: string; period_month: string; budget: number; spent: number; leftover: number; status: "rolled_over" | "confirmed" | "declined" },
+        { user_id: string; jar_id: string; period_month: string; budget: number; spent: number; leftover: number; status: "rolled_over" | "confirmed" | "declined" }
+      >;
     };
     Views: Record<string, never>;
     Functions: {
       create_share_request: { Args: { p_viewer_email: string }; Returns: undefined };
       respond_to_share_request: { Args: { p_share_id: string; p_accept: boolean }; Returns: undefined };
       revoke_share: { Args: { p_share_id: string }; Returns: undefined };
+      create_household_invite: { Args: Record<string, never>; Returns: { code: string; expires_at: string }[] };
+      join_household: { Args: { p_code: string }; Returns: string };
+      set_member_nickname: { Args: { p_user_id: string; p_nickname: string }; Returns: undefined };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
