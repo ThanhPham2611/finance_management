@@ -1,0 +1,10 @@
+appId: vn.hu.finance
+name: Auth and primary navigation
+---
+- runFlow: subflows/sign-in.yaml
+- tapOn: "Hũ, tab.*"
+- assertVisible: "Hũ của bạn"
+- tapOn: "Giao dịch, tab.*"
+- assertVisible: "Giao dịch"
+- tapOn: "Thêm, tab.*"
+- assertVisible: "Tài khoản"

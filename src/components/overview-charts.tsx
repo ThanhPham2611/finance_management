@@ -24,7 +24,7 @@ function ChartToggle({ view, options, onChange }: ChartToggleProps) {
           title={o.label}
           onClick={() => onChange(o.id)}
           className="flex items-center justify-center p-1.5"
-          style={{ background: view === o.id ? "var(--color-accent)" : "var(--color-bg)", color: view === o.id ? "var(--color-bg)" : "var(--color-neutral-700)" }}
+          style={{ background: view === o.id ? "var(--color-primary)" : "var(--color-bg)", color: view === o.id ? "var(--color-on-primary)" : "var(--color-neutral-700)" }}
         >
           <Icon name={o.icon} className="h-3.5 w-3.5" />
         </button>

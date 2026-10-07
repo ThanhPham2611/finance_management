@@ -181,9 +181,9 @@ export function AllocateClient({
   const exact = Math.abs(leftPct) < 0.01;
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
-        <h1 className="mr-auto text-xl md:text-2xl">Chia lương {monthLabel}</h1>
+    <div className="page-stack">
+      <div className="page-header flex-wrap">
+        <div className="mr-auto"><p className="eyebrow">PHÂN BỔ CÓ CHỦ ĐÍCH</p><h1>Chia lương</h1><p>{monthLabel}</p></div>
         <button type="button" onClick={resetEqual} className="btn btn-secondary">
           Chia đều
         </button>

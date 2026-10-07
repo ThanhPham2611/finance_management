@@ -1,15 +1,16 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import {
+  createMonthWindow,
+  formatDayLabel as sharedFormatDayLabel,
+  groupTransactionsByDay as sharedGroupTransactionsByDay,
+  parseYMD as sharedParseYMD,
+  toYMD as sharedToYMD,
+  type MonthWindow as SharedMonthWindow,
+  type Transaction as DomainTransaction,
+} from "@hu/domain";
 import { vnNow } from "@/lib/format";
 
-export type RealTransaction = {
-  id: string;
-  jarId: string;
-  amount: number;
-  note: string | null;
-  transactionDate: string; // "YYYY-MM-DD"
-  userId: string;
-  type: "expense" | "deposit";
-};
+export type RealTransaction = DomainTransaction;
 
 export type RealTransactionWithJar = RealTransaction & {
   jarName: string;
@@ -117,54 +118,21 @@ export async function listTransactionsSince(supabase: SupabaseClient, sinceDate:
   });
 }
 
-const WEEKDAYS = ["Chủ nhật", "Thứ Hai", "Thứ Ba", "Thứ Tư", "Thứ Năm", "Thứ Sáu", "Thứ Bảy"];
 const WEEKDAYS_SHORT = ["CN", "T2", "T3", "T4", "T5", "T6", "T7"];
 
 export function parseYMD(dateStr: string): Date {
-  const [y, m, d] = dateStr.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  return sharedParseYMD(dateStr);
 }
 
 export function toYMD(date: Date): string {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  return sharedToYMD(date);
 }
 
-const YM = /^(\d{4})-(0[1-9]|1[0-2])$/;
-
-export type MonthWindow = {
-  ym: string;
-  from: string;
-  to: string;
-  label: string;
-  month: number;
-  isCurrent: boolean;
-  prev: string;
-  next: string | null;
-};
-
-function shiftYm(ym: string, delta: number): string {
-  const [y, m] = ym.split("-").map(Number);
-  const date = new Date(y, m - 1 + delta, 1);
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-}
+export type MonthWindow = SharedMonthWindow;
 
 /** Cua so 1 thang de loc trang giao dich. `ym` sai hoac o tuong lai thi ve thang hien tai. `to` la dau thang sau (can tren, khong tinh). */
 export function monthWindow(ym: string | undefined): MonthWindow {
-  const now = vnNow();
-  const current = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const requested = ym && YM.test(ym) && ym <= current ? ym : current;
-  const month = Number(requested.slice(5));
-  const isCurrent = requested === current;
-  return {
-    ym: requested,
-    from: `${requested}-01`,
-    to: `${shiftYm(requested, 1)}-01`,
-    label: `Giao dịch tháng ${month}`,
-    month,
-    isCurrent,
-    prev: shiftYm(requested, -1),
-    next: isCurrent ? null : shiftYm(requested, 1),
-  };
+  return createMonthWindow(ym, vnNow());
 }
 
 export function weekdayShort(dateStr: string): string {
@@ -173,32 +141,9 @@ export function weekdayShort(dateStr: string): string {
 
 /** "Hôm nay", "Hôm qua", hoặc "Thứ X · dd.mm" — parse thu cong de tranh lech mui gio. */
 export function formatDayLabel(dateStr: string): string {
-  const date = parseYMD(dateStr);
-  const today = vnNow();
-  today.setHours(0, 0, 0, 0);
-  const diffDays = Math.round((today.getTime() - date.getTime()) / 86_400_000);
-
-  const dm = `${String(date.getDate()).padStart(2, "0")}.${String(date.getMonth() + 1).padStart(2, "0")}`;
-  if (diffDays === 0) return `Hôm nay · ${dm}`;
-  if (diffDays === 1) return `Hôm qua · ${dm}`;
-  return `${WEEKDAYS[date.getDay()]} · ${dm}`;
+  return sharedFormatDayLabel(dateStr, vnNow());
 }
 
-export function groupTransactionsByDay<T extends { transactionDate: string; amount: number; type?: string }>(transactions: T[]) {
-  const groups = new Map<string, T[]>();
-  for (const t of transactions) {
-    const list = groups.get(t.transactionDate) ?? [];
-    list.push(t);
-    groups.set(t.transactionDate, list);
-  }
-  return Array.from(groups.entries())
-    .sort((a, b) => (a[0] < b[0] ? 1 : -1))
-    .map(([date, items]) => ({
-      date,
-      dayLabel: formatDayLabel(date),
-      items,
-      // Khoan nap khong phai "da chi" — loai khoi tong theo ngay, nhung
-      // van giu du trong `items` de hien thi.
-      total: items.reduce((sum, t) => sum + (t.type === "deposit" ? 0 : t.amount), 0),
-    }));
+export function groupTransactionsByDay<T extends { transactionDate: string; amount: number; type?: "expense" | "deposit" }>(transactions: T[]) {
+  return sharedGroupTransactionsByDay(transactions, vnNow());
 }

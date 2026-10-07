@@ -80,12 +80,12 @@ export function HouseholdClient({
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
-        <h1 className="mr-auto text-xl md:text-2xl">Gia đình</h1>
+    <div className="page-stack">
+      <div className="page-header">
+        <div><p className="eyebrow">CÙNG NHAU GIỮ KẾ HOẠCH</p><h1>Gia đình</h1><p>Quản lý thành viên và các hũ quỹ chung.</p></div>
       </div>
 
-      <div className="border border-divider">
+      <div className="overflow-hidden rounded-card border border-divider bg-surface shadow-sm">
         <div className="border-b border-divider px-4 py-3">
           <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Thành viên</div>
         </div>
@@ -106,7 +106,7 @@ export function HouseholdClient({
           Gia đình đã đủ {MAX_HOUSEHOLD_MEMBERS} thành viên.
         </Banner>
       ) : (
-        <details className="border border-divider">
+        <details className="rounded-card border border-divider bg-surface">
           <summary className="cursor-pointer px-4 py-3 text-sm font-semibold select-none">Mời hoặc tham gia gia đình</summary>
           <div className="flex flex-col gap-4 border-t border-divider p-4">
             <div>
@@ -261,7 +261,7 @@ function FamilyJarsSection({ familyJars, myUserId }: { familyJars: FamilyJarView
       </div>
 
       {creating && (
-        <div className="border border-divider p-4">
+        <div className="rounded-card border border-divider bg-surface p-4 shadow-sm">
           <div className="field">
             <label htmlFor="family-jar-name">Tên hũ</label>
             <input
@@ -359,7 +359,7 @@ function FamilyJarRow({
   const pctOf = (n: number) => (liveTotal ? Math.round((n / liveTotal) * 100) : 0);
 
   return (
-    <div className="border border-divider p-4">
+    <div className="rounded-card border border-divider bg-surface p-4 shadow-sm">
       <div className="flex items-center gap-2.5">
         <Icon name={jar.icon} className="h-4 w-4 shrink-0" style={{ color: jar.color }} />
         <Link href={`/jars/${jar.id}`} className="text-sm font-semibold hover:underline">

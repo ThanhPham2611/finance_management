@@ -1,16 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { deleteTransaction as deleteTransactionData, updateTransaction as updateTransactionData } from "@hu/data";
+import type { UpdateTransactionInput } from "@hu/domain";
 import { createClient } from "@/lib/supabase/server";
 
-export type UpdateTransactionInput = {
-  id: string;
-  jarId: string;
-  amount: number;
-  note: string;
-  transactionDate: string;
-  type: "expense" | "deposit";
-};
+export type { UpdateTransactionInput } from "@hu/domain";
 
 export async function updateTransaction(input: UpdateTransactionInput): Promise<{ error?: string }> {
   const supabase = await createClient();
@@ -19,34 +14,8 @@ export async function updateTransaction(input: UpdateTransactionInput): Promise<
   } = await supabase.auth.getUser();
   if (!user) return { error: "Bạn cần đăng nhập lại." };
 
-  if (!input.jarId) return { error: "Chưa chọn hũ." };
-  if (!(input.amount > 0)) return { error: "Số tiền phải lớn hơn 0." };
-
-  // RLS cua bang jars da tu gioi han: cua chinh minh, hoac hu quy chung
-  // ma minh la thanh vien gia dinh.
-  const { data: jar, error: jarError } = await supabase
-    .from("jars")
-    .select("id")
-    .eq("id", input.jarId)
-    .maybeSingle();
-
-  if (jarError) return { error: jarError.message };
-  if (!jar) return { error: "Không tìm thấy hũ này." };
-
-  // RLS cua bang transactions cho phep sua giao dich cua chinh minh hoac
-  // giao dich trong hu quy chung ma minh la thanh vien gia dinh.
-  const { error } = await supabase
-    .from("transactions")
-    .update({
-      jar_id: input.jarId,
-      amount: input.amount,
-      note: input.note.trim() || null,
-      transaction_date: input.transactionDate,
-      type: input.type,
-    })
-    .eq("id", input.id);
-
-  if (error) return { error: error.message };
+  const result = await updateTransactionData(supabase, input, user.id);
+  if (result.error) return { error: result.error.message };
 
   revalidatePath("/jars");
   revalidatePath(`/jars/${input.jarId}`);
@@ -67,8 +36,8 @@ export async function deleteTransaction(input: { id: string; jarId: string }): P
   } = await supabase.auth.getUser();
   if (!user) return { error: "Bạn cần đăng nhập lại." };
 
-  const { error } = await supabase.from("transactions").delete().eq("id", input.id).eq("user_id", user.id);
-  if (error) return { error: error.message };
+  const result = await deleteTransactionData(supabase, input.id, user.id);
+  if (result.error) return { error: result.error.message };
 
   revalidatePath("/jars");
   revalidatePath(`/jars/${input.jarId}`);

@@ -23,9 +23,9 @@ export default async function JarsPage() {
   }).length;
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex items-center gap-3 border-b-2 border-divider pb-4">
-        <h1 className="mr-auto text-xl md:text-2xl">Hũ ngân sách</h1>
+    <div className="page-stack">
+      <div className="page-header">
+        <div className="mr-auto"><p className="eyebrow">KẾ HOẠCH THEO MỤC ĐÍCH</p><h1>Hũ ngân sách</h1><p>Mỗi hũ là một lời hứa nhỏ với kế hoạch của bạn.</p></div>
         <Link href="/household" aria-label="Gia đình" className="text-neutral-700 hover:text-accent md:hidden">
           <Icon name="users" className="h-5 w-5" />
         </Link>
@@ -53,24 +53,23 @@ export default async function JarsPage() {
           <ShareBar segments={spendableJars.map((j) => ({ hue: j.color, share: budgetSum ? (j.monthlyBudget / budgetSum) * 100 : 0 }))} />
 
           <div className="flex gap-2 border-b-2 border-divider pb-4 text-xs">
-            <span className="border px-2.5 py-1.5" style={{ borderColor: "var(--color-accent)", background: "var(--color-accent)", color: "var(--color-bg)" }}>
+            <span className="rounded-full border px-3 py-1.5" style={{ borderColor: "var(--color-primary)", background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
               Tất cả {displayJars.length}
             </span>
             <span className="border border-divider px-2.5 py-1.5">Cần chú ý {needsAttention}</span>
           </div>
 
-          <div className="border border-divider">
+          <div className="overflow-hidden rounded-card border border-divider bg-surface shadow-sm">
             {displayJars.map((jar) => {
               const s = jarStats(jar, formatVND);
               return (
                 <Link
                   key={jar.id}
                   href={`/jars/${jar.id}`}
-                  className="flex items-center gap-3 border-b border-divider px-4 py-2.5 last:border-b-0"
-                  style={{ background: s.rowBg }}
+                    className="flex min-h-20 items-center gap-3 border-b border-divider px-4 py-3 transition-colors last:border-b-0 hover:bg-surface-subtle"
                 >
                   <div
-                    className="grid shrink-0 place-items-center"
+                    className="grid shrink-0 place-items-center rounded-[14px]"
                     style={{ width: 34, height: 34, background: s.over ? "var(--color-accent-200)" : "var(--color-neutral-200)", color: jar.color }}
                   >
                     <Icon name={jar.icon} className="h-[17px] w-[17px]" />

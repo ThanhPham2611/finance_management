@@ -1,20 +1,14 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { createJars as createJarsData } from "@hu/data";
+import type { CreateJarInput } from "@hu/domain";
 import { createClient } from "@/lib/supabase/server";
 
 // Hu ca nhan: khong con truong isShared/household o day nua — hu gia dinh
 // gio duoc tao rieng tu trang Gia dinh (createFamilyJar), khong phai tu
 // day, de tranh trung lap ten/ngan sach voi hu cua nguoi con lai.
-export type CreateJarInput = {
-  name: string;
-  icon: string;
-  color: string;
-  monthlyBudget: number;
-  alertAt80: boolean;
-  rollover: boolean;
-  isSavings: boolean;
-};
+export type { CreateJarInput } from "@hu/domain";
 
 function revalidateJarPaths() {
   revalidatePath("/jars");
@@ -31,32 +25,8 @@ export async function createJars(inputs: CreateJarInput[]): Promise<{ error?: st
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Bạn cần đăng nhập lại." };
-  if (inputs.length === 0) return { error: "Chưa chọn hũ nào." };
-
-  const rows = [];
-  for (const input of inputs) {
-    const name = input.name.trim();
-    if (!name) return { error: "Mỗi hũ cần có tên." };
-    if (input.monthlyBudget < 0) return { error: "Ngân sách không thể âm." };
-    rows.push({
-      user_id: user.id,
-      name,
-      icon: input.icon,
-      color: input.color,
-      monthly_budget: input.monthlyBudget,
-      // Hu tiet kiem luon bat rollover, tat canh bao 80% — ep o day (chot
-      // chan thuc su) thay vi tin theo toggle hang loat o client, vi
-      // isSavings la theo tung draft con alertAt80/rollover la global.
-      alert_at_80: input.isSavings ? false : input.alertAt80,
-      rollover: input.isSavings ? true : input.rollover,
-      is_savings: input.isSavings,
-      is_shared: false,
-      household_id: null,
-    });
-  }
-
-  const { error } = await supabase.from("jars").insert(rows);
-  if (error) return { error: error.message };
+  const result = await createJarsData(supabase, inputs, user.id);
+  if (result.error) return { error: result.error.message };
 
   revalidateJarPaths();
   return {};

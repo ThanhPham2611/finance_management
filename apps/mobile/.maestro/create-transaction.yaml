@@ -1,0 +1,24 @@
+appId: vn.hu.finance
+name: Create a transaction
+---
+- runFlow: subflows/sign-in.yaml
+- tapOn: "Giao dịch, tab.*"
+- tapOn: "Ghi giao dịch"
+- assertVisible: "Số tiền"
+- tapOn: "Số tiền"
+- inputText: "10000"
+- tapOn: "Ghi chú"
+- inputText: "Maestro smoke"
+- tapOn: "Chi từ hũ nào"
+- scrollUntilVisible:
+    element: "Lưu giao dịch"
+- tapOn: "Lưu giao dịch"
+# Sau khi lưu app hiện màn kết quả (số dư hũ sau khoản này), rồi mở hũ để thấy giao dịch trong lịch sử hũ.
+- assertVisible: "Đã lưu.*"
+- tapOn: "Xem hũ.*"
+- assertVisible: "Maestro smoke.*"
+# Dọn dữ liệu thử: xóa giao dịch vừa tạo để số dư hũ trở lại như cũ.
+- tapOn: "Maestro smoke.*"
+- tapOn: "Xóa giao dịch"
+- tapOn: "Xóa"
+- assertNotVisible: "Maestro smoke.*"

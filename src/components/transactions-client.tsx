@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
 import { EditableTransaction } from "@/components/editable-transaction";
-import { formatVND } from "@/lib/format";
+import { SpendingCalendar, type DaySpend } from "@/components/spending-calendar";
+import { formatVND, vnToday } from "@/lib/format";
 import { nameOf, type HouseholdMember } from "@/lib/queries/household";
 import { jarLabel, type RealJar } from "@/lib/queries/jars";
-import { groupTransactionsByDay, type MonthWindow, type RealTransactionWithJar } from "@/lib/queries/transactions";
+import { formatDayLabel, groupTransactionsByDay, type MonthWindow, type RealTransactionWithJar } from "@/lib/queries/transactions";
 
+type ViewMode = "list" | "calendar";
 type TypeFilter = "all" | "expense" | "deposit";
 type ScopeFilter = "all" | "personal" | "family";
 
@@ -39,6 +41,8 @@ export function TransactionsClient({
   const [type, setType] = useState<TypeFilter>("all");
   const [jarId, setJarId] = useState("all");
   const [scope, setScope] = useState<ScopeFilter>("all");
+  const [view, setView] = useState<ViewMode>("list");
+  const [pickedDate, setPickedDate] = useState<string | null>(null);
 
   const sharedJarIds = useMemo(() => new Set(jars.filter((j) => j.isShared).map((j) => j.id)), [jars]);
   const q = query.trim().toLowerCase();
@@ -65,6 +69,19 @@ export function TransactionsClient({
   const familySpent = familySpend.reduce((sum, t) => sum + t.amount, 0);
   const personalSpend = matchedSpend.filter((t) => !sharedJarIds.has(t.jarId));
   const days = groupTransactionsByDay(filtered);
+  const spendByDay = new Map<string, DaySpend>();
+  for (const t of spend) {
+    const day = spendByDay.get(t.transactionDate) ?? { total: 0, count: 0 };
+    spendByDay.set(t.transactionDate, { total: day.total + t.amount, count: day.count + 1 });
+  }
+  // Ngày đang chọn phải thuộc tháng đang xem; mặc định là ngày gần nhất có giao dịch.
+  const selectedDate = pickedDate?.startsWith(month.ym) ? pickedDate : (days[0]?.date ?? null);
+  const selectedItems = filtered.filter((t) => t.transactionDate === selectedDate);
+  const selectedSpent = selectedDate ? (spendByDay.get(selectedDate)?.total ?? 0) : 0;
+
+  const renderRow = (t: RealTransactionWithJar) => (
+    <TransactionRow key={t.id} t={t} jars={jars} members={members} sharedJarIds={sharedJarIds} canDelete={t.userId === userId} />
+  );
 
   function clearFilters() {
     setQuery("");
@@ -78,12 +95,12 @@ export function TransactionsClient({
   }
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex flex-wrap items-center gap-2 border-b-2 border-divider pb-4">
+    <div className="page-stack">
+      <div className="page-header items-center gap-2">
         <Link href={`/transactions?month=${month.prev}`} className="btn btn-secondary px-2" aria-label="Tháng trước">
           <Icon name="chevron-left" className="h-4 w-4" />
         </Link>
-        <h1 className="text-xl md:text-2xl">{month.label}</h1>
+        <h1 className="min-w-0 text-2xl md:text-[2.5rem]">{month.label}</h1>
         {month.next ? (
           <Link href={`/transactions?month=${month.next}`} className="btn btn-secondary px-2" aria-label="Tháng sau">
             <Icon name="chevron-right" className="h-4 w-4" />
@@ -93,12 +110,36 @@ export function TransactionsClient({
             <Icon name="chevron-right" className="h-4 w-4" />
           </button>
         )}
-        <Link href="/transactions/new" className="btn btn-primary ml-auto">
+        {/* Mobile đã có nút "+" nổi ở thanh dưới nên bỏ nút này để tiêu đề tháng vừa 1 hàng. */}
+        <Link href="/transactions/new" className="btn btn-primary ml-auto hidden md:inline-flex">
           Nhập giao dịch
         </Link>
       </div>
 
       <div className="flex flex-col gap-2">
+        <div className="flex gap-px overflow-hidden rounded-control border border-divider bg-divider sm:w-64" role="group" aria-label="Kiểu xem">
+          {(
+            [
+              { id: "list", label: "Danh sách", icon: "list" },
+              { id: "calendar", label: "Lịch", icon: "calendar-days" },
+            ] as const
+          ).map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setView(item.id)}
+              aria-pressed={item.id === view}
+              className="flex h-11 flex-1 items-center justify-center gap-2 text-sm font-semibold"
+              style={{
+                background: item.id === view ? "var(--color-primary)" : "var(--color-bg)",
+                color: item.id === view ? "var(--color-on-primary)" : "var(--color-text)",
+              }}
+            >
+              <Icon name={item.icon} className="h-4 w-4" />
+              {item.label}
+            </button>
+          ))}
+        </div>
         <label className="relative block">
           <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-600" />
           <input
@@ -111,7 +152,7 @@ export function TransactionsClient({
           />
         </label>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex flex-1 gap-px border border-divider bg-divider">
+          <div className="flex flex-1 gap-px overflow-hidden rounded-control border border-divider bg-divider">
             {TYPES.map((item) => (
               <button
                 key={item.id}
@@ -120,8 +161,8 @@ export function TransactionsClient({
                 aria-pressed={item.id === type}
                 className="flex h-11 flex-1 items-center justify-center text-sm"
                 style={{
-                  background: item.id === type ? "var(--color-accent)" : "var(--color-bg)",
-                  color: item.id === type ? "var(--color-bg)" : "var(--color-text)",
+                  background: item.id === type ? "var(--color-primary)" : "var(--color-bg)",
+                  color: item.id === type ? "var(--color-on-primary)" : "var(--color-text)",
                 }}
               >
                 {item.label}
@@ -162,7 +203,7 @@ export function TransactionsClient({
           )}
         </div>
         {sharedJarIds.size > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-px border border-divider bg-divider">
+          <div className="mt-3 grid grid-cols-2 gap-3">
             <ScopeCard
               label="Cá nhân"
               amount={matchedSpend.reduce((sum, t) => sum + t.amount, 0) - familySpent}
@@ -181,7 +222,34 @@ export function TransactionsClient({
         )}
       </div>
 
-      {filtered.length === 0 ? (
+      {view === "calendar" ? (
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start">
+          <SpendingCalendar
+            ym={month.ym}
+            spendByDay={spendByDay}
+            selected={selectedDate}
+            today={month.isCurrent ? vnToday() : null}
+            onSelect={setPickedDate}
+          />
+          <section aria-label="Giao dịch trong ngày" className="flex flex-col">
+            {selectedDate ? (
+              <>
+                <div className="flex items-baseline justify-between border-b-2 border-divider pb-2">
+                  <h2 className="text-base">{formatDayLabel(selectedDate)}</h2>
+                  <span className="font-heading text-lg font-extrabold tabular-nums">{formatVND(selectedSpent)} ₫</span>
+                </div>
+                {selectedItems.length === 0 ? (
+                  <p className="py-8 text-center text-sm text-neutral-700">Chưa có giao dịch nào trong ngày này.</p>
+                ) : (
+                  selectedItems.map(renderRow)
+                )}
+              </>
+            ) : (
+              <p className="py-8 text-center text-sm text-neutral-700">Tháng này chưa có giao dịch. Chọn một ngày để xem.</p>
+            )}
+          </section>
+        </div>
+      ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center gap-3 py-12 text-center">
           <Icon name={transactions.length === 0 ? "receipt" : "search"} className="h-8 w-8 text-neutral-500" />
           {transactions.length === 0 ? (
@@ -208,32 +276,7 @@ export function TransactionsClient({
                 <span className="text-[11px] font-semibold text-neutral-800">{group.dayLabel}</span>
                 <span className="text-[11px] tabular-nums text-neutral-600">{formatVND(group.total)}</span>
               </div>
-              {group.items.map((t) => (
-                <EditableTransaction key={t.id} transaction={t} jars={jars} canDelete={t.userId === userId}>
-                  <div className="flex items-center gap-3 border-b border-divider px-3 py-3">
-                    <div
-                      className="grid h-9 w-9 shrink-0 place-items-center"
-                      style={{ background: `color-mix(in srgb, ${t.jarColor} 14%, transparent)`, color: t.jarColor }}
-                    >
-                      <Icon name={t.jarIcon} className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className={`text-[13px] ${t.note ? "font-semibold" : "text-neutral-600"}`}>
-                        {t.note || (t.type === "deposit" ? "Thu" : "Không ghi chú")}
-                      </div>
-                      <div className="text-[11px] text-neutral-700">
-                        {sharedJarIds.has(t.jarId) ? jarLabel({ name: t.jarName, isShared: true, isSavings: false }) : t.jarName}
-                        {members.length > 0 && sharedJarIds.has(t.jarId) && ` · ${nameOf(members, t.userId)}`}
-                      </div>
-                    </div>
-                    <div className="text-[13px] font-semibold tabular-nums" style={t.type === "deposit" ? { color: "var(--color-green-ink)" } : undefined}>
-                      {t.type === "deposit" ? "+" : ""}
-                      {formatVND(t.amount)}
-                    </div>
-                    <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-neutral-400" />
-                  </div>
-                </EditableTransaction>
-              ))}
+              {group.items.map(renderRow)}
             </div>
           ))}
         </div>
@@ -244,10 +287,47 @@ export function TransactionsClient({
 
 function ScopeCard({ label, amount, count, pressed, onClick }: { label: string; amount: number; count: number; pressed: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={pressed} className="p-3 text-left" style={{ background: pressed ? "var(--color-accent)" : "var(--color-bg)", color: pressed ? "var(--color-bg)" : undefined }}>
+    <button type="button" onClick={onClick} aria-pressed={pressed} className="rounded-control p-3 text-left" style={{ background: pressed ? "var(--color-primary)" : "var(--color-bg)", color: pressed ? "var(--color-on-primary)" : undefined }}>
       <div className={`text-[10px] tracking-[0.1em] uppercase ${pressed ? "opacity-80" : "text-neutral-700"}`}>{label}</div>
       <div className="mt-1 font-heading text-lg font-extrabold tabular-nums">{formatVND(amount)}</div>
       <div className={`text-[11px] ${pressed ? "opacity-80" : "text-neutral-700"}`}>{count} giao dịch</div>
     </button>
+  );
+}
+
+function TransactionRow({
+  t,
+  jars,
+  members,
+  sharedJarIds,
+  canDelete,
+}: {
+  t: RealTransactionWithJar;
+  jars: RealJar[];
+  members: HouseholdMember[];
+  sharedJarIds: Set<string>;
+  canDelete: boolean;
+}) {
+  const shared = sharedJarIds.has(t.jarId);
+  return (
+    <EditableTransaction transaction={t} jars={jars} canDelete={canDelete}>
+      <div className="flex items-center gap-3 border-b border-divider px-3 py-3">
+        <div className="grid h-9 w-9 shrink-0 place-items-center" style={{ background: `color-mix(in srgb, ${t.jarColor} 14%, transparent)`, color: t.jarColor }}>
+          <Icon name={t.jarIcon} className="h-4 w-4" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className={`text-[13px] ${t.note ? "font-semibold" : "text-neutral-600"}`}>{t.note || (t.type === "deposit" ? "Thu" : "Không ghi chú")}</div>
+          <div className="text-[11px] text-neutral-700">
+            {shared ? jarLabel({ name: t.jarName, isShared: true, isSavings: false }) : t.jarName}
+            {members.length > 0 && shared && ` · ${nameOf(members, t.userId)}`}
+          </div>
+        </div>
+        <div className="text-[13px] font-semibold tabular-nums" style={t.type === "deposit" ? { color: "var(--color-green-ink)" } : undefined}>
+          {t.type === "deposit" ? "+" : ""}
+          {formatVND(t.amount)}
+        </div>
+        <Icon name="chevron-right" className="h-4 w-4 shrink-0 text-neutral-400" />
+      </div>
+    </EditableTransaction>
   );
 }

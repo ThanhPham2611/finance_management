@@ -2,125 +2,62 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ChatDrawer } from "@/components/chat-drawer";
 import { Icon } from "@/components/icon";
 import { logout } from "@/app/logout/actions";
+import { desktopNavigation, mobileNavigation, type NavigationItem } from "@/lib/navigation";
 import { displayNameOf, initialOf, type CurrentProfile } from "@/lib/queries/profile";
-import { ChatDrawer } from "@/components/chat-drawer";
-
-const NAV_ITEMS = [
-  { href: "/", label: "Tổng quan", icon: "layout-dashboard" },
-  { href: "/jars", label: "Hũ ngân sách", icon: "wallet" },
-  { href: "/allocate", label: "Chia lương", icon: "calculator" },
-  { href: "/transactions", label: "Giao dịch", icon: "receipt" },
-  { href: "/reports", label: "Báo cáo", icon: "chart-no-axes-column" },
-  { href: "/household", label: "Gia đình", icon: "users" },
-  { href: "/shared", label: "Chia sẻ", icon: "share-2" },
-];
-
-const TAB_ITEMS = [
-  { href: "/", label: "Tổng quan", icon: "layout-dashboard" },
-  { href: "/jars", label: "Hũ", icon: "wallet" },
-  { href: "/allocate", label: "Chia lương", icon: "calculator" },
-  { href: "/reports", label: "Báo cáo", icon: "chart-no-axes-column" },
-];
 
 function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+  return href === "/" ? pathname === "/" : pathname.startsWith(href.split("#")[0]);
 }
 
-// Full-screen entry flows: they render their own close (X) and bottom
-// action bar, so the persistent tab bar must get out of the way instead
-// of stacking on top of them on mobile.
 const TAKEOVER_PATHS = ["/transactions/new", "/jars/new"];
 
-function isTakeover(pathname: string) {
-  return TAKEOVER_PATHS.some((p) => pathname.startsWith(p));
-}
-
-export function AppShell({
-  children,
-  profile,
-}: {
-  children: React.ReactNode;
-  profile: CurrentProfile | null;
-}) {
+export function AppShell({ children, profile }: { children: React.ReactNode; profile: CurrentProfile | null }) {
   const pathname = usePathname();
-  const takeover = isTakeover(pathname);
+  const takeover = TAKEOVER_PATHS.some((path) => pathname.startsWith(path));
 
   return (
-    <div className="flex min-h-screen">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-[210px] shrink-0 flex-col border-r-2 border-divider py-4.5 md:flex">
-        <div className="px-4.5 pb-4.5 font-heading text-[17px] font-extrabold">
-          Hũ<span className="text-accent">.</span>
-        </div>
-        <nav className="flex flex-col">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(pathname, item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center gap-2.5 px-4.5 py-2.5 text-[13px]"
-                style={active ? { background: "var(--color-accent)", color: "var(--color-bg)" } : undefined}
-              >
-                <Icon name={item.icon} className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
+    <div className="min-h-screen md:grid md:grid-cols-[248px_minmax(0,1fr)]">
+      <aside className="sticky top-0 hidden h-screen flex-col border-r border-divider bg-surface px-3 py-5 md:flex">
+        <Link href="/" className="mb-7 flex items-center gap-3 px-3 text-text no-underline" aria-label="Hũ — về tổng quan">
+          <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-primary font-heading text-xl font-extrabold text-on-primary">H</span>
+          <span><span className="block font-heading text-xl font-extrabold">Hũ</span><span className="block text-xs text-neutral-700">Tiền rõ ràng, lòng nhẹ tênh</span></span>
+        </Link>
+        <nav aria-label="Điều hướng chính" className="flex flex-col gap-1">
+          {desktopNavigation.map((item) => <DesktopLink key={item.href} item={item} active={isActive(pathname, item.href)} />)}
         </nav>
-        <div className="mt-auto flex items-center gap-2.5 border-t-2 border-divider p-4.5">
-          <div className="grid h-7 w-7 place-items-center bg-text text-[11px] font-semibold text-bg">
-            {profile ? initialOf(profile) : "?"}
+        <div className="mt-auto rounded-card border border-divider bg-bg p-3">
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-primary text-sm font-bold text-on-primary">{profile ? initialOf(profile) : "?"}</div>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm font-bold">{profile ? displayNameOf(profile) : "Chưa đăng nhập"}</p><Link href="/?tour=1" className="text-xs text-neutral-700 hover:text-primary">Xem lại hướng dẫn</Link></div>
+            <form action={logout}><button type="submit" aria-label="Đăng xuất" className="icon-button"><Icon name="log-out" className="h-4 w-4" /></button></form>
           </div>
-          <div className="flex-1 truncate text-[12px]">{profile ? displayNameOf(profile) : "Chưa đăng nhập"}</div>
-          <Link href="/?tour=1" aria-label="Xem hướng dẫn lại" className="text-neutral-700 hover:text-accent">
-            <Icon name="circle-help" className="h-4 w-4" />
-          </Link>
-          <form action={logout}>
-            <button type="submit" aria-label="Đăng xuất" className="text-neutral-700 hover:text-accent">
-              <Icon name="log-out" className="h-4 w-4" />
-            </button>
-          </form>
         </div>
       </aside>
 
-      <div className="flex min-h-screen flex-1 flex-col">
-        <main className={takeover ? "flex-1" : "flex-1 pb-[88px] md:pb-0"}>{children}</main>
-
-        {/* Mobile bottom tab bar — hidden during a takeover flow (own bottom action bar) */}
+      <div className="min-w-0">
+        {!takeover && <header className="sticky top-0 z-10 flex h-14 items-center border-b border-divider bg-bg/95 px-4 backdrop-blur md:hidden"><Link href="/" className="font-heading text-xl font-extrabold text-text">Hũ<span className="text-accent">.</span></Link></header>}
+        <main className={takeover ? "min-h-screen" : "min-h-screen pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-0"}>{children}</main>
         {!takeover && (
-        <nav className="fixed inset-x-0 bottom-0 z-20 grid h-[72px] grid-cols-5 items-center border-t-2 border-divider bg-bg md:hidden">
-          {TAB_ITEMS.slice(0, 2).map((item) => (
-            <TabLink key={item.href} item={item} active={isActive(pathname, item.href)} />
-          ))}
-          <div className="grid place-items-center">
-            <Link data-tour="add-transaction-mobile" href="/transactions/new" className="grid h-12 w-12 place-items-center bg-accent text-bg">
-              <Icon name="plus" className="h-6 w-6" />
-            </Link>
-          </div>
-          {TAB_ITEMS.slice(2).map((item) => (
-            <TabLink key={item.href} item={item} active={isActive(pathname, item.href)} />
-          ))}
-        </nav>
+          <>
+            <Link data-tour="add-transaction-mobile" href="/transactions/new" aria-label="Thêm giao dịch" className="fixed bottom-[calc(76px+env(safe-area-inset-bottom))] left-1/2 z-30 grid h-12 w-12 -translate-x-1/2 place-items-center rounded-full bg-primary text-on-primary shadow-lg md:hidden"><Icon name="plus" className="h-6 w-6" /></Link>
+            <nav aria-label="Điều hướng di động" className="fixed inset-x-0 bottom-0 z-20 grid h-[calc(68px+env(safe-area-inset-bottom))] grid-cols-5 border-t border-divider bg-surface px-1 pb-[env(safe-area-inset-bottom)] md:hidden">
+              {mobileNavigation.map((item) => <MobileLink key={item.href} item={item} active={isActive(pathname, item.href)} />)}
+            </nav>
+          </>
         )}
       </div>
-
       <ChatDrawer />
     </div>
   );
 }
 
-function TabLink({ item, active }: { item: (typeof TAB_ITEMS)[number]; active: boolean }) {
-  return (
-    <Link
-      href={item.href}
-      className="flex flex-col items-center gap-1 text-[10px]"
-      style={{ color: active ? "var(--color-accent)" : "var(--color-neutral-700)" }}
-    >
-      <Icon name={item.icon} className="h-[18px] w-[18px]" />
-      {item.label}
-    </Link>
-  );
+function DesktopLink({ item, active }: { item: NavigationItem; active: boolean }) {
+  return <Link href={item.href} aria-current={active ? "page" : undefined} className={`flex min-h-11 items-center gap-3 rounded-control px-3 text-[15px] font-semibold transition-colors ${active ? "bg-primary text-on-primary" : "text-neutral-800 hover:bg-surface-subtle hover:text-text"}`}><Icon name={item.icon} className="h-[18px] w-[18px]" />{item.label}</Link>;
+}
+
+function MobileLink({ item, active }: { item: NavigationItem; active: boolean }) {
+  return <Link href={item.href} aria-current={active ? "page" : undefined} className={`flex min-h-12 flex-col items-center justify-center gap-1 px-1 text-[11px] font-semibold ${active ? "text-primary" : "text-neutral-700"}`}><Icon name={item.icon} className="h-5 w-5" /><span>{item.label}</span></Link>;
 }

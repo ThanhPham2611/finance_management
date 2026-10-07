@@ -37,7 +37,7 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
   const avgPerDay = dayOfMonth ? Math.round(jar.spent / dayOfMonth) : 0;
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
+    <div className="page-stack">
       <div className="flex items-center gap-3">
         <Link href="/jars" aria-label="Quay lại danh sách hũ">
           <Icon name="arrow-left" className="h-[19px] w-[19px]" />
@@ -62,8 +62,8 @@ export default async function JarDetailPage({ params }: PageProps<"/jars/[id]">)
         </Link>
       </div>
 
-      <div className="flex items-start gap-3.5 border-b-2 border-divider pb-4">
-        <div className="grid h-[46px] w-[46px] shrink-0 place-items-center" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: jar.color }}>
+      <div className="flex items-start gap-3.5 rounded-card border border-divider bg-[#E5EEE9] p-5 shadow-sm">
+        <div className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[14px]" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: jar.color }}>
           <Icon name={jar.icon} className="h-[22px] w-[22px]" />
         </div>
         <div className="flex-1">

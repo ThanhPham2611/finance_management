@@ -1,18 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { calculateJarStats, totalBudget as sumBudget, totalSpent as sumSpent, type Jar } from "@hu/domain";
 import { vnNow } from "@/lib/format";
 
-export type RealJar = {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-  monthlyBudget: number;
-  spent: number;
-  isShared: boolean;
-  alertAt80: boolean;
-  rollover: boolean;
-  isSavings: boolean;
-};
+export type RealJar = Jar;
 
 /** Dau thang hien tai theo gio VN, dang "YYYY-MM-01" (cot date trong Postgres). */
 export function currentMonthStart(): string {
@@ -93,26 +83,16 @@ export type JarStats = {
 };
 
 const AMBER = "oklch(0.70 0.15 68)";
-const MIN_DAYS_FOR_PREDICTION = 3;
 
 export function jarStats(jar: RealJar, formatVND: (n: number) => string, now: Date = vnNow()): JarStats {
-  const left = jar.monthlyBudget - jar.spent;
-  const pct = jar.monthlyBudget ? jar.spent / jar.monthlyBudget : 0;
-  const over = left < 0;
-  const near = !over && jar.alertAt80 && pct >= 0.8;
-
-  const dayOfMonth = now.getDate();
-  const totalDaysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const canPredict = jar.monthlyBudget > 0 && dayOfMonth >= MIN_DAYS_FOR_PREDICTION;
-  const projectedSpent = canPredict ? (jar.spent / dayOfMonth) * totalDaysInMonth : jar.spent;
-  const willExceed = jar.alertAt80 && !over && canPredict && projectedSpent > jar.monthlyBudget;
+  const { left, pct, over, near, projectedSpent, projectedOverAmount, willExceed } = calculateJarStats(jar, now);
 
   return {
     left,
-    pct: Math.min(100, Math.round(pct * 100)),
+    pct,
     over,
     near,
-    pctLabel: `${Math.min(100, Math.round(pct * 100))}%`,
+    pctLabel: `${pct}%`,
     leftWord: over ? "vượt" : "còn",
     leftAmount: formatVND(Math.abs(left)),
     barColor: over ? "var(--color-accent)" : near ? AMBER : willExceed ? AMBER : jar.color,
@@ -121,7 +101,7 @@ export function jarStats(jar: RealJar, formatVND: (n: number) => string, now: Da
     rowBg: over ? "var(--color-accent-100)" : "transparent",
     willExceed,
     projectedSpent,
-    projectedOverAmount: Math.max(0, projectedSpent - jar.monthlyBudget),
+    projectedOverAmount,
   };
 }
 
@@ -135,9 +115,9 @@ export function jarLabel(jar: Pick<RealJar, "name" | "isShared" | "isSavings">):
 }
 
 export function totalBudget(jars: RealJar[]): number {
-  return jars.reduce((sum, j) => sum + j.monthlyBudget, 0);
+  return sumBudget(jars);
 }
 
 export function totalSpent(jars: RealJar[]): number {
-  return jars.reduce((sum, j) => sum + j.spent, 0);
+  return sumSpent(jars);
 }

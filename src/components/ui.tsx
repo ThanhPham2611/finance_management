@@ -13,8 +13,8 @@ export function ProgressBar({
   className?: string;
 }) {
   return (
-    <div className={`flex bg-neutral-300 ${className}`} style={{ height }}>
-      <div style={{ width: `${Math.min(100, Math.max(0, pct))}%`, background: color }} />
+    <div className={`flex overflow-hidden rounded-full bg-neutral-300 ${className}`} style={{ height }}>
+      <div className="rounded-full" style={{ width: `${Math.min(100, Math.max(0, pct))}%`, background: color }} />
     </div>
   );
 }
@@ -79,22 +79,24 @@ export function Toggle({
   return (
     <button
       type="button"
+      role="switch"
+      aria-checked={checked}
       onClick={() => onChange(!checked)}
       className="flex w-full items-center gap-3 border-b border-divider py-3.5 text-left last:border-b-0"
     >
       <div className="flex-1">
-        <div className="text-[13px] font-semibold">{label}</div>
-        <div className="text-[11px] text-neutral-700">{hint}</div>
+        <div className="text-base font-semibold">{label}</div>
+        <div className="text-sm text-neutral-700">{hint}</div>
       </div>
       <div
-        className="flex h-6 w-[42px] items-center p-[3px]"
+        className="flex h-6 w-[42px] items-center rounded-full p-[3px]"
         style={{
-          background: checked ? "var(--color-accent)" : "var(--color-bg)",
-          border: checked ? "none" : "1px solid var(--color-divider)",
+          background: checked ? "var(--color-primary)" : "var(--color-bg)",
+          border: "1px solid var(--color-divider)",
           justifyContent: checked ? "flex-end" : "flex-start",
         }}
       >
-        <div className="h-[18px] w-[18px]" style={{ background: checked ? "var(--color-bg)" : "var(--color-neutral-400)" }} />
+        <div className="h-[18px] w-[18px] rounded-full" style={{ background: checked ? "var(--color-on-primary)" : "var(--color-neutral-400)" }} />
       </div>
     </button>
   );
@@ -103,7 +105,7 @@ export function Toggle({
 type BannerTone = "accent" | "amber" | "green";
 
 const BANNER_TONE: Record<BannerTone, { bg: string; ink: string }> = {
-  accent: { bg: "var(--color-accent)", ink: "var(--color-bg)" },
+  accent: { bg: "#FDECEA", ink: "var(--color-destructive)" },
   amber: { bg: "oklch(0.70 0.15 68 / 0.16)", ink: "var(--color-amber-ink)" },
   green: { bg: "oklch(0.52 0.10 155 / 0.16)", ink: "var(--color-green-ink)" },
 };
@@ -119,10 +121,9 @@ export function Banner({
 }) {
   const t = BANNER_TONE[tone];
   return (
-    <div className="flex items-center gap-2.5 px-4 py-3 text-[13px]" style={{ background: t.bg, color: t.ink }}>
+    <div className="flex items-center gap-2.5 rounded-control px-4 py-3 text-sm" style={{ background: t.bg, color: t.ink }}>
       <Icon name={icon} className="h-[17px] w-[17px] shrink-0" />
       <div className="flex-1">{children}</div>
     </div>
   );
 }
-

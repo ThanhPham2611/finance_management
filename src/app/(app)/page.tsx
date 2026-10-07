@@ -104,9 +104,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   const tourOpen = tour === "1" || !hasSeenTour;
 
   return (
-    <div className="flex flex-col gap-4 px-4 py-4 md:px-7 md:py-4.5">
-      <div className="flex flex-wrap items-center gap-3 border-b-2 border-divider pb-4">
-        <h1 className="mr-auto text-xl md:text-2xl">Tổng quan {periodLabel()}</h1>
+    <div className="page-stack">
+      <div className="page-header flex-wrap">
+        <div className="mr-auto"><p className="eyebrow">BỨC TRANH TÀI CHÍNH</p><h1>Tổng quan</h1><p>{periodLabel()}</p></div>
         <Link data-tour="add-transaction-desktop" href="/transactions/new" className="btn btn-primary hidden md:inline-flex">
           Nhập giao dịch
         </Link>
@@ -122,9 +122,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
         </div>
       ) : (
         <>
-          <div data-tour="remaining-summary" className="border-b-2 border-divider pb-4">
+          <div data-tour="remaining-summary" className="rounded-card border border-divider bg-[#E5EEE9] p-5 shadow-sm md:p-6">
             <div>
-              <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Còn lại</div>
+              <div className="eyebrow">CÒN CÓ THỂ CHI</div>
               <div className="mt-1.5 font-heading text-4xl font-extrabold tabular-nums md:text-[40px]">{formatVND(remaining)}</div>
               <div className="mt-1 text-xs text-neutral-700">
                 VND · ngân sách {formatVND(budgetSum)} chia vào {spendableJars.length} hũ · còn {daysLeft} ngày
@@ -150,7 +150,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
 
           <div>
             <div className="mb-2 text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Tình trạng các hũ</div>
-            <div data-tour="jars-grid" className="grid grid-cols-2 gap-px border border-divider bg-divider sm:grid-cols-3">
+            <div data-tour="jars-grid" className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {jars.map((jar, i) => {
                 const s = jarStats(jar, formatVND);
                 const isLastOdd = i === jars.length - 1 && jars.length % 2 === 1;
@@ -158,8 +158,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
                   <Link
                     key={jar.id}
                     href={`/jars/${jar.id}`}
-                    className={`block p-3.5 ${isLastOdd ? "col-span-2 sm:col-span-1" : ""}`}
-                    style={{ background: s.tileBg }}
+                    className={`block rounded-card border border-divider bg-surface p-4 shadow-sm transition-transform hover:-translate-y-0.5 ${isLastOdd ? "sm:col-span-2 lg:col-span-1" : ""}`}
                   >
                     <div className="flex items-center gap-2">
                       <Icon name={jar.icon} className="h-4 w-4" style={{ color: jar.color }} />

@@ -1,0 +1,21 @@
+appId: vn.hu.finance
+name: Transactions month navigation, search and calendar
+---
+- runFlow: subflows/sign-in.yaml
+- tapOn: "Giao dịch, tab.*"
+- assertVisible: "Đã chi tháng này"
+# Chuyển tháng: lùi một tháng rồi tiến lại; nút "Tháng sau" bị khóa ở tháng hiện tại.
+- tapOn: "Tháng trước"
+- assertVisible: "Đã chi tháng .*"
+- tapOn: "Tháng sau"
+- assertVisible: "Đã chi tháng này"
+# Tìm kiếm không khớp gì (hoặc tháng còn trống) rồi xóa lọc.
+- tapOn: "Tìm giao dịch"
+- inputText: "zzzz-khong-co-giao-dich-nao"
+- assertVisible: "Không có giao dịch khớp|Sổ tháng này còn trống"
+# Chế độ Lịch: lưới thứ trong tuần và chú thích mức chi.
+- tapOn: "Giao dịch"
+- tapOn: "Lịch"
+- assertVisible: "T2"
+- scrollUntilVisible:
+    element: "Chi ít"
