@@ -1,13 +1,17 @@
 import { onlineManager, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  addDebtPayment,
   applyAllocation,
   applyAutoRollovers,
+  archiveDebt,
+  createDebt,
   createFamilyJar,
   createHouseholdInvite,
   createJars,
   createShareRequest,
   createTransaction,
   deactivateJar,
+  deleteDebtPayment,
   deleteTransaction,
   getHouseholdOverview,
   getMyFamilyContributionTotal,
@@ -17,6 +21,7 @@ import {
   getSharedOwnerOverview,
   getSharesOverview,
   joinHousehold,
+  listDebts,
   listJarsWithSpent,
   listRecentTransactions,
   listTransactions,
@@ -34,6 +39,8 @@ import {
 import {
   createMonthWindow,
   vietnamNow,
+  type AddDebtPaymentInput,
+  type CreateDebtInput,
   type CreateJarInput,
   type CreateTransactionInput,
   type UpdateJarInput,
@@ -361,4 +368,36 @@ export function useDeleteTransaction() {
     },
     onSuccess: invalidate,
   });
+}
+
+/** Các khoản nợ đang theo dõi kèm lịch sử trả. */
+export function useDebts() {
+  return useQuery({ queryKey: financeKeys.debts, queryFn: () => listDebts(supabase) });
+}
+
+function useDebtsMutation<TInput>(run: (input: TInput) => ReturnType<typeof createDebt>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: TInput) => {
+      requireOnline();
+      unwrap(await run(input));
+    },
+    onSuccess: () => client.invalidateQueries({ queryKey: financeKeys.debts }),
+  });
+}
+
+export function useCreateDebt() {
+  return useDebtsMutation((input: CreateDebtInput) => createDebt(supabase, input));
+}
+
+export function useAddDebtPayment() {
+  return useDebtsMutation((input: AddDebtPaymentInput) => addDebtPayment(supabase, input));
+}
+
+export function useDeleteDebtPayment() {
+  return useDebtsMutation((paymentId: string) => deleteDebtPayment(supabase, paymentId));
+}
+
+export function useArchiveDebt() {
+  return useDebtsMutation((debtId: string) => archiveDebt(supabase, debtId));
 }

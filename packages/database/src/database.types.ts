@@ -86,6 +86,15 @@ export type Database = {
         { jar_id: string; user_id: string; period_month: string; amount: number },
         { jar_id: string; user_id: string; period_month: string; amount: number }
       >;
+      // Source of truth: supabase/migrations/013_debts.sql.
+      debts: Table<
+        { id: string; user_id: string; name: string; principal: number; term_months: number; start_date: string; is_active: boolean; created_at: string },
+        { id?: string; user_id: string; name: string; principal: number; term_months?: number; start_date?: string; is_active?: boolean; created_at?: string }
+      >;
+      debt_payments: Table<
+        { id: string; debt_id: string; user_id: string; amount: number; paid_on: string; created_at: string },
+        { id?: string; debt_id: string; user_id: string; amount: number; paid_on?: string; created_at?: string }
+      >;
       jar_leftover_events: Table<
         { user_id: string; jar_id: string; period_month: string; budget: number; spent: number; leftover: number; status: "rolled_over" | "confirmed" | "declined" },
         { user_id: string; jar_id: string; period_month: string; budget: number; spent: number; leftover: number; status: "rolled_over" | "confirmed" | "declined" }

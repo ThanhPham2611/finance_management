@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Icon } from "@/components/icon";
 import { EditableTransaction } from "@/components/editable-transaction";
+import { EmptyState } from "@/components/primitives";
+import { Segmented } from "@/components/segmented";
 import { SpendingCalendar, type DaySpend } from "@/components/spending-calendar";
 import { formatVND, vnToday } from "@/lib/format";
 import { nameOf, type HouseholdMember } from "@/lib/queries/household";
@@ -13,6 +15,11 @@ import { formatDayLabel, groupTransactionsByDay, type MonthWindow, type RealTran
 type ViewMode = "list" | "calendar";
 type TypeFilter = "all" | "expense" | "deposit";
 type ScopeFilter = "all" | "personal" | "family";
+
+const VIEWS = [
+  { id: "list", label: "Danh sách", icon: "list" },
+  { id: "calendar", label: "Lịch", icon: "calendar-days" },
+] as const;
 
 const TYPES: { id: TypeFilter; label: string }[] = [
   { id: "all", label: "Tất cả" },
@@ -116,72 +123,8 @@ export function TransactionsClient({
         </Link>
       </div>
 
-      <div className="flex flex-col gap-2">
-        <div className="flex gap-px overflow-hidden rounded-control border border-divider bg-divider sm:w-64" role="group" aria-label="Kiểu xem">
-          {(
-            [
-              { id: "list", label: "Danh sách", icon: "list" },
-              { id: "calendar", label: "Lịch", icon: "calendar-days" },
-            ] as const
-          ).map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setView(item.id)}
-              aria-pressed={item.id === view}
-              className="flex h-11 flex-1 items-center justify-center gap-2 text-sm font-semibold"
-              style={{
-                background: item.id === view ? "var(--color-primary)" : "var(--color-bg)",
-                color: item.id === view ? "var(--color-on-primary)" : "var(--color-text)",
-              }}
-            >
-              <Icon name={item.icon} className="h-4 w-4" />
-              {item.label}
-            </button>
-          ))}
-        </div>
-        <label className="relative block">
-          <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-600" />
-          <input
-            className="input pl-9"
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Tìm ghi chú hoặc tên hũ"
-            aria-label="Tìm giao dịch"
-          />
-        </label>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <div className="flex flex-1 gap-px overflow-hidden rounded-control border border-divider bg-divider">
-            {TYPES.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => setType(item.id)}
-                aria-pressed={item.id === type}
-                className="flex h-11 flex-1 items-center justify-center text-sm"
-                style={{
-                  background: item.id === type ? "var(--color-primary)" : "var(--color-bg)",
-                  color: item.id === type ? "var(--color-on-primary)" : "var(--color-text)",
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-          <select className="input sm:w-52" aria-label="Lọc theo hũ" value={jarId} onChange={(e) => setJarId(e.target.value)}>
-            <option value="all">Tất cả hũ</option>
-            {jars.map((j) => (
-              <option key={j.id} value={j.id}>
-                {jarLabel(j)}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="border-b-2 border-divider pb-4">
-        <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">{month.isCurrent ? "Đã chi tháng này" : `Đã chi tháng ${month.month}`}</div>
+      <section aria-label="Tổng chi trong tháng" className="rounded-card border border-divider bg-[#E5EEE9] p-5 shadow-sm md:p-6">
+        <div className="eyebrow uppercase">{month.isCurrent ? "Đã chi tháng này" : `Đã chi tháng ${month.month}`}</div>
         <div className="mt-1.5 font-heading text-4xl font-extrabold tabular-nums md:text-[40px]">{formatVND(totalSpent)}</div>
         <div className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-neutral-700">
           {filtering ? (
@@ -203,7 +146,7 @@ export function TransactionsClient({
           )}
         </div>
         {sharedJarIds.size > 0 && (
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-4 grid grid-cols-2 gap-3">
             <ScopeCard
               label="Cá nhân"
               amount={matchedSpend.reduce((sum, t) => sum + t.amount, 0) - familySpent}
@@ -220,6 +163,30 @@ export function TransactionsClient({
             />
           </div>
         )}
+      </section>
+
+      {/* Thanh công cụ tự xuống hàng theo bề rộng (không cần breakpoint): rộng thì 1 hàng, điện thoại thì tìm kiếm / hũ / loại + kiểu xem. */}
+      <div className="flex flex-wrap gap-2">
+        <label className="relative block min-w-0 flex-[1_1_16rem]">
+          <Icon name="search" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-neutral-600" />
+          <input className="input pl-9" type="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Tìm ghi chú hoặc tên hũ" aria-label="Tìm giao dịch" />
+        </label>
+        {/* Đang lọc theo hũ thì ô chọn đổi sang nền xanh để nhìn là biết bộ lọc đang bật. */}
+        <select
+          className={`input min-w-0 flex-[1_1_13rem] lg:flex-[0_1_13rem] ${jarId !== "all" ? "border-primary bg-[#E5EEE9] font-semibold" : ""}`}
+          aria-label="Lọc theo hũ"
+          value={jarId}
+          onChange={(e) => setJarId(e.target.value)}
+        >
+          <option value="all">Tất cả hũ</option>
+          {jars.map((j) => (
+            <option key={j.id} value={j.id}>
+              {jarLabel(j)}
+            </option>
+          ))}
+        </select>
+        <Segmented label="Loại giao dịch" options={TYPES} value={type} onChange={setType} className="flex-[1_1_14rem] lg:flex-[0_0_auto]" />
+        <Segmented label="Kiểu xem" options={VIEWS} value={view} onChange={setView} iconOnly className="w-24 flex-none" />
       </div>
 
       {view === "calendar" ? (
@@ -231,53 +198,44 @@ export function TransactionsClient({
             today={month.isCurrent ? vnToday() : null}
             onSelect={setPickedDate}
           />
-          <section aria-label="Giao dịch trong ngày" className="flex flex-col">
+          <section aria-label="Giao dịch trong ngày">
             {selectedDate ? (
-              <>
-                <div className="flex items-baseline justify-between border-b-2 border-divider pb-2">
-                  <h2 className="text-base">{formatDayLabel(selectedDate)}</h2>
-                  <span className="font-heading text-lg font-extrabold tabular-nums">{formatVND(selectedSpent)} ₫</span>
-                </div>
-                {selectedItems.length === 0 ? (
-                  <p className="py-8 text-center text-sm text-neutral-700">Chưa có giao dịch nào trong ngày này.</p>
-                ) : (
-                  selectedItems.map(renderRow)
-                )}
-              </>
+              <DayCard title={formatDayLabel(selectedDate)} total={selectedSpent} suffix=" ₫">
+                {selectedItems.length === 0 ? <p className="py-8 text-center text-sm text-neutral-700">Chưa có giao dịch nào trong ngày này.</p> : selectedItems.map(renderRow)}
+              </DayCard>
             ) : (
               <p className="py-8 text-center text-sm text-neutral-700">Tháng này chưa có giao dịch. Chọn một ngày để xem.</p>
             )}
           </section>
         </div>
+      ) : transactions.length === 0 ? (
+        <EmptyState
+          icon="receipt"
+          title={month.isCurrent ? "Sổ tháng này còn trống" : `Chưa có giao dịch tháng ${month.month}`}
+          message="Ghi khoản chi hoặc tiền nạp đầu tiên của bạn."
+          action={
+            <Link href="/transactions/new" className="btn btn-primary">
+              Nhập giao dịch
+            </Link>
+          }
+        />
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center gap-3 py-12 text-center">
-          <Icon name={transactions.length === 0 ? "receipt" : "search"} className="h-8 w-8 text-neutral-500" />
-          {transactions.length === 0 ? (
-            <>
-              <p className="text-sm text-neutral-700">{month.isCurrent ? "Chưa có giao dịch nào trong tháng này." : `Chưa có giao dịch nào trong tháng ${month.month}.`}</p>
-              <Link href="/transactions/new" className="btn btn-primary">
-                Nhập giao dịch
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="text-sm text-neutral-700">Không có giao dịch khớp.</p>
-              <button type="button" onClick={clearFilters} className="btn btn-secondary">
-                Xoá lọc
-              </button>
-            </>
-          )}
-        </div>
+        <EmptyState
+          icon="search"
+          title="Không có giao dịch khớp"
+          message="Thử đổi từ khoá hoặc bỏ bớt bộ lọc."
+          action={
+            <button type="button" onClick={clearFilters} className="btn btn-secondary">
+              Xoá lọc
+            </button>
+          }
+        />
       ) : (
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-4">
           {days.map((group) => (
-            <div key={group.date}>
-              <div className="flex items-baseline justify-between bg-surface px-3 py-2">
-                <span className="text-[11px] font-semibold text-neutral-800">{group.dayLabel}</span>
-                <span className="text-[11px] tabular-nums text-neutral-600">{formatVND(group.total)}</span>
-              </div>
+            <DayCard key={group.date} title={group.dayLabel} total={group.total}>
               {group.items.map(renderRow)}
-            </div>
+            </DayCard>
           ))}
         </div>
       )}
@@ -285,9 +243,30 @@ export function TransactionsClient({
   );
 }
 
+/** Một ngày = một thẻ: tiêu đề ngày + tổng, các giao dịch ngăn bằng đường mảnh. */
+function DayCard({ title, total, suffix = "", children }: { title: string; total: number; suffix?: string; children: React.ReactNode }) {
+  return (
+    <div className="overflow-hidden rounded-card border border-divider bg-surface shadow-sm">
+      <div className="flex items-baseline justify-between gap-3 bg-surface-subtle px-4 py-2.5">
+        <h2 className="text-[13px] font-bold">{title}</h2>
+        <span className="text-xs font-semibold tabular-nums text-neutral-700">
+          {formatVND(total)}
+          {suffix}
+        </span>
+      </div>
+      <div className="divide-y divide-divider">{children}</div>
+    </div>
+  );
+}
+
 function ScopeCard({ label, amount, count, pressed, onClick }: { label: string; amount: number; count: number; pressed: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} aria-pressed={pressed} className="rounded-control p-3 text-left" style={{ background: pressed ? "var(--color-primary)" : "var(--color-bg)", color: pressed ? "var(--color-on-primary)" : undefined }}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      className={`rounded-control border p-3 text-left transition-colors ${pressed ? "border-primary bg-primary text-on-primary" : "border-divider bg-surface hover:border-neutral-500"}`}
+    >
       <div className={`text-[10px] tracking-[0.1em] uppercase ${pressed ? "opacity-80" : "text-neutral-700"}`}>{label}</div>
       <div className="mt-1 font-heading text-lg font-extrabold tabular-nums">{formatVND(amount)}</div>
       <div className={`text-[11px] ${pressed ? "opacity-80" : "text-neutral-700"}`}>{count} giao dịch</div>
@@ -311,8 +290,8 @@ function TransactionRow({
   const shared = sharedJarIds.has(t.jarId);
   return (
     <EditableTransaction transaction={t} jars={jars} canDelete={canDelete}>
-      <div className="flex items-center gap-3 border-b border-divider px-3 py-3">
-        <div className="grid h-9 w-9 shrink-0 place-items-center" style={{ background: `color-mix(in srgb, ${t.jarColor} 14%, transparent)`, color: t.jarColor }}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-control" style={{ background: `color-mix(in srgb, ${t.jarColor} 14%, transparent)`, color: t.jarColor }}>
           <Icon name={t.jarIcon} className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">

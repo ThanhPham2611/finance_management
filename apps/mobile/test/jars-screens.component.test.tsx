@@ -49,6 +49,14 @@ describe("JarsScreen", () => {
     expect(view.getByText("Đã tiết kiệm 9.000.000 ₫")).toBeTruthy();
   });
 
+  it("shows each jar's share of every jar's budget (savings included) and says how it is computed", async () => {
+    queries.jars = ok([jar({ id: "a", name: "Ăn uống", monthlyBudget: 3_000_000 }), jar({ id: "s", name: "Quỹ dư", monthlyBudget: 1_000_000, isSavings: true })]);
+    const view = await render(<JarsScreen />);
+    expect(view.getByLabelText("Chiếm 75% tổng ngân sách các hũ")).toBeTruthy();
+    expect(view.getByLabelText("Chiếm 25% tổng ngân sách các hũ")).toBeTruthy();
+    expect(view.getByText(/Tỉ trọng mỗi hũ tính trên tổng 4\.000\.000 ₫/)).toBeTruthy();
+  });
+
   it("opens a jar and offers creation when there are none", async () => {
     const view = await render(<JarsScreen />);
     await fireEvent.press(view.getByText("Ăn uống"));

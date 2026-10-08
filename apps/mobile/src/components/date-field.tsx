@@ -3,19 +3,20 @@ import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from 
 import { parseYMD, toYMD } from "@hu/domain";
 import { lightColors, radii, spacing, typography } from "@hu/design-tokens";
 
-/** Chọn ngày bằng picker native. `value`/`onChange` dùng chuỗi YYYY-MM-DD; parseYMD/toYMD cùng dùng giờ địa phương nên không lệch múi giờ. */
-export function DateField({ value, onChange, label = "Ngày" }: { value: string; onChange(value: string): void; label?: string }) {
+/** Chọn ngày bằng picker native. `value`/`onChange`/`max` dùng chuỗi YYYY-MM-DD (`max`: không cho chọn ngày sau đó); parseYMD/toYMD cùng dùng giờ địa phương nên không lệch múi giờ. */
+export function DateField({ value, onChange, label = "Ngày", max }: { value: string; onChange(value: string): void; label?: string; max?: string }) {
   const date = parseYMD(value);
+  const maximumDate = max ? parseYMD(max) : undefined;
   const pick = (_event: DateTimePickerEvent, next?: Date) => {
     if (next) onChange(toYMD(next));
   };
 
   if (Platform.OS === "ios") {
-    return <DateTimePicker accessibilityLabel={label} value={date} mode="date" display="compact" locale="vi-VN" onChange={pick} style={styles.ios} />;
+    return <DateTimePicker accessibilityLabel={label} value={date} mode="date" display="compact" locale="vi-VN" maximumDate={maximumDate} onChange={pick} style={styles.ios} />;
   }
   const [year, month, day] = value.split("-");
   return (
-    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => DateTimePickerAndroid.open({ value: date, mode: "date", onChange: pick })} style={styles.android}>
+    <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={() => DateTimePickerAndroid.open({ value: date, mode: "date", maximumDate, onChange: pick })} style={styles.android}>
       <Text style={styles.text}>{`${day}/${month}/${year}`}</Text>
     </Pressable>
   );

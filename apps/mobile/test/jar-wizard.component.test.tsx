@@ -46,7 +46,7 @@ describe("NewJarScreen wizard", () => {
     expect(mockMutate.mock.calls[0][0]).toEqual([
       { name: "Ăn uống", icon: "utensils", color: "#AB5637", monthlyBudget: 1_000_000, alertAt80: false, rollover: false, isSavings: false },
       { name: "Tiết kiệm", icon: "piggy-bank", color: "#307A4F", monthlyBudget: 0, alertAt80: false, rollover: false, isSavings: true },
-      { name: "Quà tặng", icon: "wallet", color: "#9A5B13", monthlyBudget: 0, alertAt80: false, rollover: false, isSavings: false },
+      { name: "Quà tặng", icon: "wallet", color: undefined, monthlyBudget: 0, alertAt80: false, rollover: false, isSavings: false },
     ]);
   });
 

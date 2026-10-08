@@ -43,10 +43,14 @@ export default function ReportsScreen() {
 
   return (
     <Screen testID="reports-screen" refreshControl={<RefreshControl refreshing={transactions.isRefetching || jars.isRefetching} onRefresh={refetch} tintColor={lightColors.primary} />}>
-      <PageTitle action={scoped.length > 0 ? <TextButton label="Xuất CSV" icon="file-download" onPress={exportCsv} /> : undefined}>Báo cáo</PageTitle>
-      <Text style={styles.description}>Theo dõi nhịp chi tiêu theo thời gian và từng hũ.</Text>
-      {familyJarIds.size > 0 ? <SegmentedControl label="Phạm vi báo cáo" options={SCOPES} value={scope} onChange={(next) => setScope(next)} /> : null}
-      <ReportRangeSelector value={rangeId} onChange={setRangeId} />
+      <View style={styles.header}>
+        <PageTitle action={scoped.length > 0 ? <TextButton label="Xuất CSV" icon="file-download" onPress={exportCsv} /> : undefined}>Báo cáo</PageTitle>
+        <Text style={styles.description}>Theo dõi nhịp chi tiêu theo thời gian và từng hũ.</Text>
+      </View>
+      <View style={styles.filters}>
+        {familyJarIds.size > 0 ? <SegmentedControl label="Phạm vi báo cáo" options={SCOPES} value={scope} onChange={(next) => setScope(next)} /> : null}
+        <ReportRangeSelector value={rangeId} onChange={setRangeId} />
+      </View>
       {report.total === 0 ? (
         <EmptyState icon="bar-chart" title="Chưa có khoản chi trong kỳ này" message="Ghi một khoản chi để xem xu hướng và tỷ trọng theo hũ." action={<TextButton label="Ghi giao dịch" onPress={() => router.push("/transactions/new")} />} />
       ) : (
@@ -58,7 +62,7 @@ export default function ReportsScreen() {
       )}
       <View style={styles.recent}>
         <View style={styles.recentHeader}>
-          <Text style={styles.recentTitle}>Giao dịch gần đây</Text>
+          <Text accessibilityRole="header" style={styles.recentTitle}>Giao dịch gần đây</Text>
           <TextButton label="Xem tất cả" onPress={() => router.push("/transactions")} />
         </View>
         {recent.length === 0 ? <Text style={styles.description}>Chưa có giao dịch nào.</Text> : recent.map((item) => {
@@ -71,8 +75,10 @@ export default function ReportsScreen() {
 }
 
 const styles = StyleSheet.create({
+  header: { gap: spacing[1] },
+  filters: { gap: spacing[2] },
   description: { color: lightColors.textMuted, fontSize: typography.size.body },
-  recent: { gap: spacing[2], paddingTop: spacing[3], borderTopWidth: 2, borderTopColor: lightColors.border },
-  recentHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  recentTitle: { color: lightColors.text, fontSize: typography.size.title, fontWeight: "800" },
+  recent: { gap: spacing[2] },
+  recentHeader: { minHeight: 48, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
+  recentTitle: { color: lightColors.text, fontSize: typography.size.bodyLarge, fontWeight: "800" },
 });

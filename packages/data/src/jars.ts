@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@hu/database";
-import { createJarInputSchema, safeColor, updateJarInputSchema, type CreateJarInput, type Jar, type UpdateJarInput } from "@hu/domain";
+import { createJarInputSchema, pickJarColors, safeColor, updateJarInputSchema, type CreateJarInput, type Jar, type UpdateJarInput } from "@hu/domain";
 import { dataFailure, dataSuccess, type DataResult } from "./result";
 
 type JarRow = Pick<
@@ -86,6 +86,13 @@ export async function listJarsWithSpent(
   return mapJarsWithSpent(jars ?? [], transactions ?? []);
 }
 
+/** Màu của các hũ đang hoạt động mà user xem được (kể cả hũ gia đình), để cấp màu mới không trùng. */
+export async function listUsedJarColors(client: SupabaseClient<Database>): Promise<DataResult<string[]>> {
+  const { data, error } = await client.from("jars").select("color").eq("is_active", true);
+  return error ? dataFailure("SUPABASE", error.message) : dataSuccess((data ?? []).map((row) => row.color ?? ""));
+}
+
+/** Tạo nhiều hũ một lần. Màu hũ nào trùng màu hũ đang có (hoặc không hợp lệ/thiếu) được đổi sang màu chưa dùng trong bảng `JAR_COLORS`. */
 export async function createJars(
   client: SupabaseClient<Database>,
   inputs: CreateJarInput[],
@@ -107,8 +114,16 @@ export async function createJars(
     userId = authData.user.id;
   }
 
-  const rows = normalized.map((jar) => ({
+  const used = await listUsedJarColors(client);
+  if (used.error) return used;
+  const colors = pickJarColors(
+    inputs.map((input) => input.color),
+    used.data,
+  );
+
+  const rows = normalized.map((jar, index) => ({
     ...jar,
+    color: colors[index],
     user_id: userId,
     is_shared: false,
     household_id: null,

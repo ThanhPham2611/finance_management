@@ -33,10 +33,12 @@ describe("MoreScreen", () => {
     expect(view.getByText("A")).toBeTruthy();
   });
 
-  it("opens allocate, household and sharing", async () => {
+  it("opens allocate, debts, household and sharing", async () => {
     const view = await render(<MoreScreen />);
     await fireEvent.press(view.getByText("Chia lương"));
     expect(mockPush).toHaveBeenLastCalledWith("/allocate");
+    await fireEvent.press(view.getByText("Trả nợ"));
+    expect(mockPush).toHaveBeenLastCalledWith("/debts");
     await fireEvent.press(view.getByText("Gia đình"));
     expect(mockPush).toHaveBeenLastCalledWith("/household");
     await fireEvent.press(view.getByText("Chia sẻ chi tiêu"));

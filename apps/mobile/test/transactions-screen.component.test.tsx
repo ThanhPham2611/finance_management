@@ -50,6 +50,17 @@ describe("TransactionsScreen", () => {
     expect(mockUseTransactions).toHaveBeenLastCalledWith(month.ym);
   });
 
+  it("groups the rows into one titled card per day, and switches view with icon-only radios", async () => {
+    const view = await render(<TransactionsScreen />);
+    // Hai ngày có giao dịch (01 và 02) → hai thẻ ngày, mỗi thẻ một tiêu đề.
+    expect(view.getAllByRole("header")).toHaveLength(2);
+
+    expect(view.getByRole("radio", { name: "Danh sách" }).props.accessibilityState.selected).toBe(true);
+    await fireEvent.press(view.getByRole("radio", { name: "Lịch" }));
+    expect(view.getByRole("radio", { name: "Lịch" }).props.accessibilityState.selected).toBe(true);
+    expect(view.getByRole("radio", { name: "Danh sách" }).props.accessibilityState.selected).toBe(false);
+  });
+
   it("goes back a month, and cannot go past the current one", async () => {
     const view = await render(<TransactionsScreen />);
     expect(view.getByRole("button", { name: "Tháng sau" }).props.accessibilityState.disabled).toBe(true);

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { budgetShare } from "@hu/domain";
 import { Icon } from "@/components/icon";
 import { ProgressBar, ShareBar } from "@/components/ui";
 import { formatVND } from "@/lib/format";
@@ -17,6 +18,8 @@ export default async function JarsPage() {
   // sach" kieu chi tieu thuong. Danh sach hang ben duoi van hien du.
   const spendableJars = displayJars.filter((j) => !j.isSavings);
   const budgetSum = spendableJars.reduce((s, j) => s + j.monthlyBudget, 0);
+  // Ti trong (% + thanh mau) tinh tren tong MOI hu, ke ca hu tiet kiem.
+  const allBudget = displayJars.reduce((s, j) => s + j.monthlyBudget, 0);
   const needsAttention = spendableJars.filter((j) => {
     const s = jarStats(j, formatVND);
     return s.over || s.near || s.willExceed;
@@ -50,7 +53,8 @@ export default async function JarsPage() {
               <div className="mt-1.5 font-heading text-[30px] font-extrabold tabular-nums">{formatVND(budgetSum)}</div>
             </div>
           </div>
-          <ShareBar segments={spendableJars.map((j) => ({ hue: j.color, share: budgetSum ? (j.monthlyBudget / budgetSum) * 100 : 0 }))} />
+          <ShareBar segments={displayJars.map((j) => ({ hue: j.color, share: allBudget ? (j.monthlyBudget / allBudget) * 100 : 0 }))} />
+          <p className="-mt-2 text-[11px] text-neutral-700">Tỉ trọng mỗi hũ tính trên tổng {formatVND(allBudget)} ngân sách của tất cả hũ (kể cả hũ tiết kiệm).</p>
 
           <div className="flex gap-2 border-b-2 border-divider pb-4 text-xs">
             <span className="rounded-full border px-3 py-1.5" style={{ borderColor: "var(--color-primary)", background: "var(--color-primary)", color: "var(--color-on-primary)" }}>
@@ -79,6 +83,9 @@ export default async function JarsPage() {
                       <span className="text-sm font-semibold">{jarLabel(jar)}</span>
                       {jar.isShared && <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ quỹ chung" />}
                       {jar.isSavings && <Icon name="piggy-bank" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ tiết kiệm" />}
+                      <span className="shrink-0 text-[11px] tabular-nums text-neutral-700" title="Tỉ trọng ngân sách của hũ trong tổng các hũ">
+                        {budgetShare(jar, allBudget)}% tổng
+                      </span>
                       <span className="ml-auto shrink-0 text-[13px] tabular-nums" style={{ color: s.inkColor }}>
                         {jar.isSavings && !s.over ? `đã tiết kiệm ${s.leftAmount}` : `${s.leftWord} ${s.leftAmount}`}
                       </span>

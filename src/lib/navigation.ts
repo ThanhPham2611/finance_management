@@ -9,6 +9,7 @@ export const desktopNavigation: readonly NavigationItem[] = [
   { href: "/jars", label: "Hũ ngân sách", icon: "wallet" },
   { href: "/transactions", label: "Giao dịch", icon: "receipt" },
   { href: "/allocate", label: "Chia lương", icon: "calculator" },
+  { href: "/debts", label: "Trả nợ", icon: "hand-coins" },
   { href: "/reports", label: "Báo cáo", icon: "chart-no-axes-column" },
   { href: "/household", label: "Gia đình", icon: "users" },
   { href: "/shared", label: "Chia sẻ", icon: "share-2" },
@@ -24,6 +25,7 @@ export const mobileNavigation: readonly NavigationItem[] = [
 
 export const moreNavigation: readonly NavigationItem[] = [
   { href: "/allocate", label: "Chia lương", icon: "calculator" },
+  { href: "/debts", label: "Trả nợ", icon: "hand-coins" },
   { href: "/household", label: "Gia đình", icon: "users" },
   { href: "/shared", label: "Chia sẻ", icon: "share-2" },
   { href: "/more#account", label: "Tài khoản", icon: "circle-user-round" },

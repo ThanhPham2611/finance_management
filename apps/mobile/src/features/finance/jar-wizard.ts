@@ -22,7 +22,7 @@ export function canSaveDrafts(drafts: JarWizardDraft[]): boolean {
   return drafts.length > 0 && drafts.every((draft) => draft.name.trim() !== "");
 }
 
-/** Cảnh báo 80% và cộng dồn là tuỳ chọn chung cho cả lô; hũ tiết kiệm bị `normalizeJarForWrite` (@hu/data) ép về tắt cảnh báo + luôn cộng dồn. */
+/** Cảnh báo 80% và cộng dồn là tuỳ chọn chung cho cả lô; hũ tiết kiệm bị `normalizeJarForWrite` (@hu/data) ép về tắt cảnh báo + luôn cộng dồn. Hũ tự đặt tên không gửi màu: `createJars` cấp màu chưa hũ nào dùng. */
 export function toCreateInputs(drafts: JarWizardDraft[], options: { alertAt80: boolean; rollover: boolean }): CreateJarInput[] {
-  return drafts.map((draft) => ({ name: draft.name.trim() || "Hũ mới", icon: draft.icon, color: draft.color, monthlyBudget: draft.budget, alertAt80: options.alertAt80, rollover: options.rollover, isSavings: draft.isSavings }));
+  return drafts.map((draft) => ({ name: draft.name.trim() || "Hũ mới", icon: draft.icon, color: draft.presetName ? draft.color : undefined, monthlyBudget: draft.budget, alertAt80: options.alertAt80, rollover: options.rollover, isSavings: draft.isSavings }));
 }

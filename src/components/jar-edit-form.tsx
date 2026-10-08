@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { JAR_COLORS } from "@hu/domain";
 import { Icon } from "@/components/icon";
 import { BudgetField } from "@/components/budget-field";
 import { Banner, Toggle } from "@/components/ui";
@@ -13,6 +14,7 @@ import { deactivateJar, updateJar } from "@/app/(app)/jars/[id]/edit/actions";
 export function JarEditForm({ jar }: { jar: RealJar }) {
   const router = useRouter();
   const [name, setName] = useState(jar.name);
+  const [color, setColor] = useState(jar.color);
   const [budget, setBudget] = useState(jar.monthlyBudget);
   const [alertAt80, setAlertAt80] = useState(jar.alertAt80);
   const [rollover, setRollover] = useState(jar.rollover);
@@ -24,7 +26,7 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
   async function handleSave() {
     setSaving(true);
     setError(null);
-    const result = await updateJar({ jarId: jar.id, name, monthlyBudget: budget, alertAt80, rollover, isSavings });
+    const result = await updateJar({ jarId: jar.id, name, monthlyBudget: budget, color: color === jar.color ? undefined : color, alertAt80, rollover, isSavings });
     setSaving(false);
     if (result.error) {
       setError(result.error);
@@ -54,7 +56,7 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
         <button type="button" onClick={() => router.back()} aria-label="Quay lại">
           <Icon name="arrow-left" className="h-[19px] w-[19px]" />
         </button>
-        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px]" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color: jar.color }}>
+        <div className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px]" style={{ background: "color-mix(in srgb, currentColor 12%, transparent)", color }}>
           <Icon name={jar.icon} className="h-4 w-4" />
         </div>
         <h1 className="mr-auto text-lg md:text-xl">Sửa {jar.name}</h1>
@@ -63,6 +65,29 @@ export function JarEditForm({ jar }: { jar: RealJar }) {
       <div className="field max-w-sm">
         <label htmlFor="jar-name">Tên hũ</label>
         <input id="jar-name" className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="Tên hũ" />
+      </div>
+
+      <div className="max-w-sm">
+        <div className="text-xs text-neutral-700">Màu hũ</div>
+        <div role="radiogroup" aria-label="Màu hũ" className="mt-2 grid grid-cols-8 gap-2">
+          {JAR_COLORS.map((option) => {
+            const selected = option.toUpperCase() === color.toUpperCase();
+            return (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={`Màu ${option}`}
+                onClick={() => setColor(option)}
+                className="grid aspect-square place-items-center rounded-full"
+                style={{ background: option, outline: selected ? "2px solid var(--color-text)" : "none", outlineOffset: 2 }}
+              >
+                {selected && <Icon name="check" className="h-3.5 w-3.5 text-white" />}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="max-w-sm border-t-2 border-divider pt-4">

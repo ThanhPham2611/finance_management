@@ -1,15 +1,22 @@
 import { describe, expect, it } from "vitest";
 import {
+  budgetShare,
   buildMonthGrid,
   calculateJarStats,
+  calculateSpendingPace,
   formatCompactMoney,
   createJarInputSchema,
   createMonthWindow,
   createTransactionInputSchema,
   formatMoney,
   groupTransactionsByDay,
+  JAR_COLORS,
   JAR_PRESETS,
+  nextJarColor,
+  paceMessage,
+  pickJarColors,
   safeColor,
+  withDistinctJarColors,
 } from "../src/index";
 
 const JAR_ID = "11111111-1111-4111-8111-111111111111";
@@ -168,5 +175,87 @@ describe("jar stats for savings jars", () => {
     expect(stats.pct).toBe(0);
     expect(stats.left).toBe(1_500_000);
     expect(stats.over).toBe(false);
+  });
+});
+
+const jar = (over: Partial<Parameters<typeof calculateSpendingPace>[0][number]>) => ({
+  id: "j",
+  name: "Hũ",
+  icon: "wallet",
+  color: "#AB5637",
+  monthlyBudget: 0,
+  spent: 0,
+  isShared: false,
+  alertAt80: true,
+  rollover: false,
+  isSavings: false,
+  ...over,
+});
+
+describe("spending pace", () => {
+  // 30 ngày, ngân sách chi tiêu 15 triệu = 500k/ngày; hũ tiết kiệm không tính.
+  const jars = (spent: number) => [jar({ monthlyBudget: 10_000_000, spent: spent * 0.6 }), jar({ monthlyBudget: 5_000_000, spent: spent * 0.4 }), jar({ monthlyBudget: 9_000_000, spent: 0, isSavings: true })];
+  const day10 = new Date(2026, 8, 10);
+
+  it("warns when the daily average beats the daily budget (600k vs 500k)", () => {
+    const pace = calculateSpendingPace(jars(6_000_000), day10);
+    expect(pace).toMatchObject({ status: "over", dailyBudget: 500_000, dailyAverage: 600_000, projectedOver: 3_000_000 });
+    expect(pace.dailyAllowed).toBeCloseTo(9_000_000 / 21);
+    expect(paceMessage(pace, (n) => `${Math.round(n)}đ`)?.tone).toBe("danger");
+  });
+
+  it("is good under 90%, watch between 90% and 100%", () => {
+    expect(calculateSpendingPace(jars(4_000_000), day10).status).toBe("good");
+    expect(calculateSpendingPace(jars(4_800_000), day10).status).toBe("watch");
+    expect(calculateSpendingPace(jars(5_000_000), day10).status).toBe("watch");
+  });
+
+  it("does not judge in the first two days or without a budget", () => {
+    expect(calculateSpendingPace(jars(900_000), new Date(2026, 8, 2)).status).toBe("early");
+    expect(calculateSpendingPace([jar({})], day10).status).toBe("none");
+    expect(paceMessage(calculateSpendingPace([jar({})], day10), String)).toBeNull();
+  });
+
+  it("allows nothing more once the budget is gone", () => {
+    expect(calculateSpendingPace(jars(16_000_000), day10).dailyAllowed).toBe(0);
+  });
+});
+
+describe("budget share", () => {
+  it("is the rounded percentage of the total, 0 for an empty total", () => {
+    expect(budgetShare({ monthlyBudget: 2_500_000 }, 10_000_000)).toBe(25);
+    expect(budgetShare({ monthlyBudget: 1 }, 3)).toBe(33);
+    expect(budgetShare({ monthlyBudget: 100 }, 0)).toBe(0);
+  });
+});
+
+describe("jar colors", () => {
+  it("has enough distinct, drawable colors and keeps the preset colors first", () => {
+    expect(JAR_COLORS.length).toBeGreaterThanOrEqual(30);
+    expect(new Set(JAR_COLORS.map((color) => color.toUpperCase())).size).toBe(JAR_COLORS.length);
+    expect(JAR_COLORS.every((color) => safeColor(color, "bad") === color)).toBe(true);
+    expect(JAR_COLORS.slice(0, JAR_PRESETS.length)).toEqual(JAR_PRESETS.map((preset) => preset.color));
+  });
+
+  it("hands out the first unused color, case-insensitively, and cycles least-used when exhausted", () => {
+    expect(nextJarColor([])).toBe(JAR_COLORS[0]);
+    expect(nextJarColor([JAR_COLORS[0].toLowerCase(), "var(--x)", null])).toBe(JAR_COLORS[1]);
+    expect(nextJarColor([...JAR_COLORS, ...JAR_COLORS.slice(0, 3)])).toBe(JAR_COLORS[3]);
+  });
+
+  it("recolors only the later duplicates, keeping the first jar's color and the order", () => {
+    const jars = [{ id: "a", color: "#9A5B13" }, { id: "b", color: "#9a5b13" }, { id: "c", color: "#9A5B13" }, { id: "d", color: "#174C3C" }];
+    const out = withDistinctJarColors(jars);
+    expect(out.map((jar) => jar.id)).toEqual(["a", "b", "c", "d"]);
+    expect(out[0].color).toBe("#9A5B13");
+    expect(out[3].color).toBe("#174C3C");
+    expect(new Set(out.map((jar) => jar.color.toUpperCase())).size).toBe(4);
+    expect(jars[1].color).toBe("#9a5b13"); // input untouched
+  });
+
+  it("keeps a free requested color, replaces a taken or invalid one, and never repeats inside a batch", () => {
+    const [a, b, c, d] = pickJarColors([JAR_COLORS[5], JAR_COLORS[5], "var(--color-accent)", undefined], [JAR_COLORS[0]]);
+    expect(a).toBe(JAR_COLORS[5]);
+    expect(new Set([JAR_COLORS[0], a, b, c, d]).size).toBe(5);
   });
 });

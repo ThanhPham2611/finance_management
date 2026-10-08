@@ -19,7 +19,8 @@ export function BudgetSplitChart({ jars, budgetSum }: { jars: Jar[]; budgetSum: 
   const rows = jars.map((jar) => ({ name: jar.name, color: jar.color, value: jar.monthlyBudget }));
 
   return (
-    <View style={styles.block}>
+    // onLayout đặt ở khối luôn có mặt (không phải ở vùng donut mới mount): có sẵn bề rộng nên donut vẽ ngay khi bấm, không bật lên sau một nhịp làm cả khối giật xuống.
+    <View testID="budget-split-chart" onLayout={onLayout} style={styles.block}>
       <SegmentedControl label="Kiểu biểu đồ ngân sách" options={BUDGET_VIEWS} value={view} onChange={(next) => setView(next)} />
       {budgetSum === 0 ? <Text style={styles.empty}>Chưa có ngân sách</Text> : view === "bar" ? (
         <View accessibilityLabel="Tỷ lệ ngân sách giữa các hũ" style={styles.stack}>
@@ -27,7 +28,7 @@ export function BudgetSplitChart({ jars, budgetSum }: { jars: Jar[]; budgetSum: 
         </View>
       ) : (
         <>
-          <View testID="budget-donut-chart" onLayout={onLayout}>
+          <View testID="budget-donut-chart">
             {width > 0 ? <DonutChart data={rows} valueKey="value" labelKey="name" colorKey="color" width={width} height={Math.min(width, 220)} theme="light" legend={false} selectionAnimation={selectionAnimation} accessibilityLabel="Biểu đồ ngân sách chia vào các hũ" /> : null}
           </View>
           {jars.map((jar) => (

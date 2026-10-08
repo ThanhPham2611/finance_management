@@ -63,7 +63,7 @@ function Donut({ jars, budgetSum }: { jars: RealJar[]; budgetSum: number }) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
       <div className="mx-auto h-[220px] w-[220px] shrink-0 sm:mx-0">
-        <ResponsiveContainer width="100%" height="100%">
+        <ResponsiveContainer width="100%" height="100%" initialDimension={{ width: 220, height: 220 }}>
           <PieChart>
             <Pie
               data={data}
@@ -73,6 +73,7 @@ function Donut({ jars, budgetSum }: { jars: RealJar[]; budgetSum: number }) {
               cy="50%"
               innerRadius={72}
               outerRadius={98}
+              isAnimationActive={false}
               activeShape={renderActiveShape}
               onMouseEnter={(_, i) => setActiveIndex(i)}
               onMouseLeave={() => setActiveIndex(null)}
