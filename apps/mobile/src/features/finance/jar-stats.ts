@@ -31,7 +31,7 @@ export function jarDetail(jar: Jar, now: Date) {
   };
 }
 
-/** Tổng quan danh sách hũ. Hũ tiết kiệm không nằm trong tổng ngân sách hay "Cần chú ý" (không phải tiền để chi). */
+/** Tổng quan danh sách hũ. Hũ tiết kiệm không nằm trong tổng ngân sách hay "Cần chú ý" (không phải tiền để chi), nhưng có phần trong tỉ trọng: `shares` tính trên tổng ngân sách MỌI hũ (`allBudget`). */
 export function jarsOverview(jars: Jar[], now: Date) {
   const spendable = jars.filter((jar) => !jar.isSavings);
   const budgetSum = spendable.reduce((sum, jar) => sum + jar.monthlyBudget, 0);
@@ -39,9 +39,11 @@ export function jarsOverview(jars: Jar[], now: Date) {
     const stats = calculateJarStats(jar, now);
     return stats.over || stats.near || stats.willExceed;
   }).length;
+  const allBudget = jars.reduce((sum, jar) => sum + jar.monthlyBudget, 0);
   return {
     budgetSum,
+    allBudget,
     needsAttention,
-    shares: spendable.map((jar) => ({ id: jar.id, color: jar.color, share: budgetSum ? (jar.monthlyBudget / budgetSum) * 100 : 0 })),
+    shares: jars.map((jar) => ({ id: jar.id, color: jar.color, share: allBudget ? (jar.monthlyBudget / allBudget) * 100 : 0 })),
   };
 }

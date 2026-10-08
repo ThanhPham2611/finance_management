@@ -1,9 +1,13 @@
 import Link from "next/link";
 import { Banner } from "@/components/ui";
+import { budgetShare, calculateSpendingPace, withDistinctJarColors } from "@hu/domain";
 import { BudgetSplitChart, WeekTrendChart } from "@/components/overview-charts";
+import { SpendingPaceCard } from "@/components/spending-pace-card";
+import { DebtsOverviewCard } from "@/components/debts-overview-card";
+import { listDebts } from "@hu/data";
 import { EditableTransaction } from "@/components/editable-transaction";
 import { Icon } from "@/components/icon";
-import { formatVND, vnNow } from "@/lib/format";
+import { formatVND, vnNow, vnToday } from "@/lib/format";
 import { createClient } from "@/lib/supabase/server";
 import { jarLabel, jarStats, listJarsWithSpent, totalBudget, totalSpent } from "@/lib/queries/jars";
 import { listRecentTransactions, listTransactionsSince, toYMD, weekdayShort } from "@/lib/queries/transactions";
@@ -48,7 +52,7 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
 
   // Cac query doc doc lap nhau — chay song song thay vi noi duoi (moi lan
   // await la 1 round-trip toi Supabase).
-  const [jars, pendingLeftovers, last7, recent, hasSeenTour] = await Promise.all([
+  const [rawJars, pendingLeftovers, last7, recent, hasSeenTour, debts] = await Promise.all([
     jarsAfterRollover,
     getPendingLeftovers(supabase, user.id).catch(() => []),
     listTransactionsSince(supabase, toYMD(sevenDaysAgo)),
@@ -63,7 +67,11 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
         return true;
       }
     })(),
+    // Khoan no la tinh nang phu: chua chay migration 013 thi bo qua, khong lam sap Tong quan.
+    listDebts(supabase).catch(() => []),
   ]);
+  // Hu cu co the trung mau (hu tuy chinh truoc day deu nhan cung 1 mau) — chi doi mau luc hien thi de bieu do tach duoc tung hu.
+  const jars = withDistinctJarColors(rawJars);
   // Hu tiet kiem khong tinh vao "Con lai" co the tieu — khong phai tien de
   // chi, va rut/gan-het cua no khong nen kich hoat canh bao "vuot ngan
   // sach" kieu chi tieu thuong. Luoi "Tinh trang cac hu" ben duoi van hien
@@ -100,6 +108,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
   }
   const weekTotal = week.reduce((s, d) => s + d.value, 0);
 
+  const pace = calculateSpendingPace(jars, today);
+  // Ti trong tinh tren tong ngan sach MOI hu (ke ca hu tiet kiem) — "chia het cac hu" nhu goi y % thu nhap cua mau hu.
+  const allBudget = totalBudget(jars);
   const daysLeft = daysLeftInMonth();
   const tourOpen = tour === "1" || !hasSeenTour;
 
@@ -140,6 +151,10 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
             </div>
           </div>
 
+          <SpendingPaceCard pace={pace} />
+
+          <DebtsOverviewCard debts={debts} today={vnToday()} />
+
           {alert && (
             <Banner icon="triangle-alert" tone="accent">
               <span className="font-semibold">{alert}</span>
@@ -165,6 +180,9 @@ export default async function DashboardPage({ searchParams }: PageProps<"/">) {
                       <span className="text-[12px] font-semibold">{jarLabel(jar)}</span>
                       {jar.isShared && <Icon name="users" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ quỹ chung" />}
                       {jar.isSavings && <Icon name="piggy-bank" className="h-3.5 w-3.5 shrink-0 text-neutral-500" aria-label="Hũ tiết kiệm" />}
+                      <span className="ml-auto shrink-0 text-[11px] tabular-nums text-neutral-700" title="Tỉ trọng ngân sách của hũ trong tổng các hũ">
+                        {budgetShare(jar, allBudget)}% tổng
+                      </span>
                     </div>
                     <div className="mt-2 font-heading text-[19px] font-extrabold tabular-nums" style={{ color: s.inkColor }}>
                       {!jar.isSavings && s.over ? "−" : ""}

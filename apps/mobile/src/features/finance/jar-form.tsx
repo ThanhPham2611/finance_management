@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import type { CreateJarInput } from "@hu/domain";
-import { formatMoney } from "@hu/domain";
+import { formatMoney, JAR_COLORS } from "@hu/domain";
 import { AuthField, FormError, PrimaryButton } from "@/components/auth-form";
 import { BudgetField } from "@/components/budget-field";
 import { ToggleRow } from "@/components/finance-ui";
@@ -44,6 +45,19 @@ export function JarForm({ initial = EMPTY_JAR, shared = false, submitLabel, busy
       {error || serverError ? <FormError>{error ?? serverError}</FormError> : null}
       <AuthField label="Tên hũ" value={draft.name} onChangeText={(name) => setDraft((value) => ({ ...value, name }))} />
       <View style={styles.field}>
+        <Text style={styles.label}>Màu hũ</Text>
+        <View accessibilityRole="radiogroup" accessibilityLabel="Màu hũ" style={styles.swatches}>
+          {JAR_COLORS.map((color) => {
+            const selected = color.toUpperCase() === draft.color.toUpperCase();
+            return (
+              <Pressable key={color} accessibilityRole="radio" accessibilityLabel={`Màu ${color}`} accessibilityState={{ selected }} onPress={() => setDraft((value) => ({ ...value, color }))} style={[styles.swatch, { backgroundColor: color }, selected && styles.swatchActive]}>
+                {selected ? <MaterialIcons accessibilityElementsHidden importantForAccessibility="no" name="check" size={16} color="#FFFFFF" /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </View>
+      <View style={styles.field}>
         <Text style={styles.label}>Ngân sách mỗi tháng</Text>
         {shared ? (
           <>
@@ -70,6 +84,9 @@ export function JarForm({ initial = EMPTY_JAR, shared = false, submitLabel, busy
 const styles = StyleSheet.create({
   field: { gap: spacing[2] },
   label: { color: lightColors.text, fontSize: typography.size.body, fontWeight: "700" },
+  swatches: { flexDirection: "row", flexWrap: "wrap", gap: spacing[2] },
+  swatch: { width: 36, height: 36, alignItems: "center", justifyContent: "center", borderRadius: 18, borderWidth: 2, borderColor: "transparent" },
+  swatchActive: { borderColor: lightColors.text },
   hint: { color: lightColors.textMuted, fontSize: typography.size.caption, lineHeight: 19 },
   readOnly: { color: lightColors.text, fontSize: 28, fontWeight: "800", fontVariant: ["tabular-nums"] },
   info: { color: lightColors.success, backgroundColor: "#E4F0EA", borderRadius: radii.control, padding: spacing[3], fontSize: typography.size.caption, lineHeight: 20 },

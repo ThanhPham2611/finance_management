@@ -37,11 +37,11 @@ describe("jar wizard drafts", () => {
     expect(canSaveDrafts([{ ...draftCustom(), name: "Quà tặng" }, draftFromPreset(preset("Đi lại"))])).toBe(true);
   });
 
-  it("builds create inputs with the shared options and trimmed names", () => {
+  it("builds create inputs with the shared options and trimmed names; custom jars send no color so createJars hands out an unused one", () => {
     const drafts = [{ ...draftFromPreset(preset("Đi lại")), budget: 700_000 }, { ...draftCustom(), name: "  Quà tặng " }];
     expect(toCreateInputs(drafts, { alertAt80: false, rollover: true })).toEqual([
       { name: "Đi lại", icon: "bus", color: "#2C7866", monthlyBudget: 700_000, alertAt80: false, rollover: true, isSavings: false },
-      { name: "Quà tặng", icon: "wallet", color: "#9A5B13", monthlyBudget: 0, alertAt80: false, rollover: true, isSavings: false },
+      { name: "Quà tặng", icon: "wallet", color: undefined, monthlyBudget: 0, alertAt80: false, rollover: true, isSavings: false },
     ]);
   });
 });
@@ -71,12 +71,13 @@ describe("jarDetail", () => {
 });
 
 describe("jarsOverview", () => {
-  it("leaves savings jars out of the budget total and attention count", () => {
+  it("leaves savings jars out of the budget total and attention count, but shares are of ALL jars", () => {
     const jars = [jar({ id: "a", monthlyBudget: 3_000_000, spent: 3_500_000 }), jar({ id: "b", monthlyBudget: 1_000_000, spent: 100_000 }), jar({ id: "s", isSavings: true, monthlyBudget: 9_000_000, spent: 0 })];
     const o = jarsOverview(jars, day10);
     expect(o.budgetSum).toBe(4_000_000);
+    expect(o.allBudget).toBe(13_000_000);
     expect(o.needsAttention).toBe(1);
-    expect(o.shares.map((s) => [s.id, s.share])).toEqual([["a", 75], ["b", 25]]);
+    expect(o.shares.map((s) => [s.id, Math.round(s.share)])).toEqual([["a", 23], ["b", 8], ["s", 69]]);
   });
 
   it("does not divide by zero when no jar has a budget", () => {

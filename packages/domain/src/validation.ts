@@ -30,6 +30,19 @@ export const updateTransactionInputSchema = z.object({
   transactionDate: date,
 });
 
+export const createDebtInputSchema = z.object({
+  name: z.string().trim().min(1).max(80),
+  principal: money,
+  termMonths: z.number().int().min(1).max(600),
+  startDate: date.optional(),
+});
+
+export const addDebtPaymentInputSchema = z.object({
+  debtId: uuid,
+  amount: money,
+  paidOn: date.optional(),
+});
+
 const jarFields = {
   name: z.string().trim().min(1).max(80),
   monthlyBudget: nonNegativeMoney,
@@ -65,3 +78,5 @@ export type CreateTransactionInput = z.input<typeof createTransactionInputSchema
 export type UpdateTransactionInput = z.input<typeof updateTransactionInputSchema>;
 export type CreateJarInput = z.input<typeof createJarInputSchema>;
 export type UpdateJarInput = z.input<typeof updateJarInputSchema>;
+export type CreateDebtInput = z.input<typeof createDebtInputSchema>;
+export type AddDebtPaymentInput = z.input<typeof addDebtPaymentInputSchema>;

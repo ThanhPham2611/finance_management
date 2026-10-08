@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 
-test("3 tính năng đã bỏ không còn trong menu và trả 404 khi vào thẳng URL", async ({ page }) => {
+test("2 tính năng đã bỏ không còn trong menu và trả 404 khi vào thẳng URL", async ({ page }) => {
   await page.goto("/");
   await page.waitForLoadState("networkidle");
-  for (const label of ["Trả nợ", "Thành tích", "What-if"]) {
+  for (const label of ["Thành tích", "What-if"]) {
     await expect(page.getByRole("link", { name: label })).toHaveCount(0);
   }
 
-  for (const path of ["/debts", "/achievements", "/simulator"]) {
+  for (const path of ["/achievements", "/simulator"]) {
     const response = await page.goto(path);
     expect(response?.status(), `${path} phải trả 404`).toBe(404);
   }
@@ -60,7 +60,7 @@ test("tạo giao dịch rồi xoá — chỉ giao dịch của chính mình mớ
 
   await page.goto("/transactions/new");
   await page.waitForLoadState("networkidle");
-  await page.getByRole("button", { name: /Mua sắm/ }).click();
+  await page.getByRole("button", { name: /^Mua sắm/ }).click();
   await page.getByLabel("Nhập số tiền").fill("1000");
   await page.getByLabel("Ghi chú (không bắt buộc)").fill(note);
   await page.getByRole("button", { name: /^Lưu/ }).click();
@@ -94,7 +94,7 @@ test("tìm giao dịch theo ghi chú, xoá lọc khi không khớp, và xem thá
 
   await page.goto("/transactions/new");
   await page.waitForLoadState("networkidle");
-  await page.getByRole("button", { name: /Mua sắm/ }).click();
+  await page.getByRole("button", { name: /^Mua sắm/ }).click();
   await page.getByLabel("Nhập số tiền").fill("1000");
   await page.getByLabel("Ghi chú (không bắt buộc)").fill(note);
   await page.getByRole("button", { name: /^Lưu/ }).click();
@@ -136,7 +136,7 @@ test("khoản thu cộng vào hũ chi tiêu thường và hiện dấu cộng", 
   await page.goto("/transactions/new");
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Thu", exact: true }).click();
-  await page.getByRole("button", { name: /Mua sắm/ }).click();
+  await page.getByRole("button", { name: /^Mua sắm/ }).click();
   await page.getByLabel("Nhập số tiền").fill("1000");
   await page.getByLabel("Ghi chú (không bắt buộc)").fill(note);
   await page.getByRole("button", { name: /Thu .+ vào/ }).click();

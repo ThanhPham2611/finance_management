@@ -1,8 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@hu/database";
-import { listJarsWithSpent } from "./jars";
+import { listJarsWithSpent, listUsedJarColors } from "./jars";
 import { dataFailure, dataSuccess, type DataResult } from "./result";
-import { vietnamNow, type Jar } from "@hu/domain";
+import { pickJarColors, vietnamNow, type Jar } from "@hu/domain";
 
 // Port của src/lib/queries/household.ts + app/(app)/household/actions.ts (web), dùng cho mobile.
 
@@ -128,7 +128,7 @@ export async function setMemberNickname(client: Client, memberId: string, nickna
   return error ? rpcFailure(error.message) : dataSuccess(undefined);
 }
 
-/** Tạo hũ gia đình mới: ngân sách bắt đầu từ 0, tăng lên khi từng người nhập phần đóng góp. Màu mặc định là hex (RN không hiểu `var(...)`). */
+/** Tạo hũ gia đình mới: ngân sách bắt đầu từ 0, tăng lên khi từng người nhập phần đóng góp. Màu luôn là hex (RN không hiểu `var(...)`) và không trùng hũ đang có. */
 export async function createFamilyJar(client: Client, userId: string, input: { name: string; icon?: string; color?: string; alertAt80?: boolean; rollover?: boolean }): Promise<DataResult<void>> {
   const name = input.name.trim();
   if (!name) return dataFailure("VALIDATION", "Cần đặt tên cho hũ.");
@@ -137,11 +137,15 @@ export async function createFamilyJar(client: Client, userId: string, input: { n
   if (membershipError) return rpcFailure(membershipError.message);
   if (!membership) return dataFailure("VALIDATION", "Cần lập gia đình trước khi tạo hũ gia đình.");
 
+  const used = await listUsedJarColors(client);
+  if (used.error) return rpcFailure(used.error.message);
+  const [color] = pickJarColors([input.color], used.data);
+
   const { error } = await client.from("jars").insert({
     user_id: userId,
     name,
     icon: input.icon ?? "home",
-    color: input.color ?? "#9A5B13",
+    color,
     monthly_budget: 0,
     alert_at_80: input.alertAt80 ?? true,
     rollover: input.rollover ?? false,

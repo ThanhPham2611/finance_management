@@ -4,11 +4,13 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react"; // [OCR] doi lai: import { useRef, useState }
 import { Icon } from "@/components/icon";
-import { formatVND } from "@/lib/format";
+import { formatVND, vnToday } from "@/lib/format";
 import { jarLabel, jarStats, type RealJar } from "@/lib/queries/jars";
 import { createTransaction } from "@/app/(app)/transactions/new/actions";
 // [OCR] import { extractReceiptData } from "@/app/(app)/transactions/new/ocr-actions";
-import { Banner, MoneyInput } from "@/components/ui";
+import { Banner } from "@/components/ui";
+import { CalcMoneyInput } from "@/components/calc-money-input";
+import type { TransactionSuggestion } from "@hu/domain";
 
 // OCR tam tat o version nay — bo comment cac khoi danh dau [OCR] de bat lai.
 // [OCR]
@@ -33,7 +35,7 @@ import { Banner, MoneyInput } from "@/components/ui";
 //   });
 // }
 
-export function TransactionEntry({ jars }: { jars: RealJar[] }) {
+export function TransactionEntry({ jars, suggestions = [] }: { jars: RealJar[]; suggestions?: TransactionSuggestion[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const jarsForEntry = jars;
@@ -42,9 +44,13 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
   const [bucketIndex, setBucketIndex] = useState(preselected >= 0 ? preselected : 0);
   const [amount, setAmount] = useState(0);
   const [note, setNote] = useState("");
+  // Ngay giao dich: mac dinh hom nay (gio VN), cho nhap bu cac khoan cu — khong cho ngay tuong lai.
+  const today = vnToday();
+  const [date, setDate] = useState(today);
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [quickError, setQuickError] = useState<string | null>(null);
   // Canh bao truoc khi rut tu hu tiet kiem — chi ap dung mode="expense".
   // Click "Luu" lan dau chi bat co nay (chua luu), click lan 2 moi that
   // su goi action. Reset ve false khi doi hu/so tien de tranh ap nham.
@@ -71,22 +77,50 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
 
   const jar = jarsForEntry[bucketIndex];
   const left = jar.monthlyBudget - jar.spent;
-  const after = mode === "deposit" ? left + amount : left - amount;
+  // Goi y theo loai dang chon. Khoan rut tu hu tiet kiem khong cho bam 1 cham (phai qua buoc xac nhan).
+  const visibleSuggestions = suggestions.filter((s) => {
+    const target = jarsForEntry.find((j) => j.id === s.jarId);
+    return target && s.type === mode && !(s.type === "expense" && target.isSavings);
+  });
+  // Khoan thuoc thang truoc khong anh huong ngan sach/"con lai" cua thang nay.
+  const inThisMonth = date.slice(0, 7) === today.slice(0, 7);
+  const effective = inThisMonth ? amount : 0;
+  const after = mode === "deposit" ? left + effective : left - effective;
+
+  /** Ghi 1 giao dịch (dùng chung cho nút Lưu và gợi ý nhanh); ngày lấy từ ô Ngày. Trả lỗi nếu có. */
+  async function persist(input: { jarId: string; amount: number; note: string; type: "expense" | "deposit" }): Promise<string | null> {
+    if (!date || date > today) return "Ngày giao dịch không hợp lệ (không được ở tương lai).";
+    setSaving(true);
+    const result = await createTransaction({ ...input, transactionDate: date });
+    setSaving(false);
+    if (result.error) return result.error;
+    router.refresh();
+    return null;
+  }
 
   async function handleSave() {
     if (mode === "expense" && jar.isSavings && !confirmSavings) {
       setConfirmSavings(true);
       return;
     }
-    setSaving(true);
     setSaveError(null);
-    const result = await createTransaction({ jarId: jar.id, amount, note, type: mode });
-    setSaving(false);
-    if (result.error) {
-      setSaveError(result.error);
-      return;
-    }
-    router.refresh();
+    const error = await persist({ jarId: jar.id, amount, note, type: mode });
+    if (error) return setSaveError(error);
+    setSaved(true);
+  }
+
+  /** Bấm gợi ý = thêm luôn 1 giao dịch y hệt (hũ, số tiền, ghi chú) vào ngày đang chọn, rồi hiện màn kết quả như khi tự nhập. */
+  async function handleQuickAdd(suggestion: TransactionSuggestion) {
+    const index = jarsForEntry.findIndex((j) => j.id === suggestion.jarId);
+    if (index < 0 || saving) return;
+    setQuickError(null);
+    const error = await persist(suggestion);
+    if (error) return setQuickError(error);
+    setMode(suggestion.type);
+    setBucketIndex(index);
+    setAmount(suggestion.amount);
+    setNote(suggestion.note);
+    setConfirmSavings(false);
     setSaved(true);
   }
 
@@ -121,7 +155,7 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
   */
 
   if (saved) {
-    const updatedJar: RealJar = { ...jar, spent: mode === "deposit" ? jar.spent - amount : jar.spent + amount };
+    const updatedJar: RealJar = { ...jar, spent: mode === "deposit" ? jar.spent - effective : jar.spent + effective };
     const stats = jarStats(updatedJar, formatVND);
     return (
       <div className="page-stack">
@@ -145,6 +179,9 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
           </div>
           <div className="font-heading text-lg font-extrabold tabular-nums">{formatVND(Math.max(0, after))}</div>
         </div>
+        {!inThisMonth && (
+          <p className="text-xs text-neutral-700">Giao dịch ngày {date.split("-").reverse().join("/")} thuộc tháng trước, không tính vào ngân sách tháng này.</p>
+        )}
         <div className="flex gap-2.5">
           <button
             type="button"
@@ -175,18 +212,17 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
     );
   }
 
-  const hint =
-    mode === "deposit"
-      ? !amount
-        ? "Bấm số để nhập"
-        : `Sau khoản này ${jar.name} có ${formatVND(after)}`
-      : !amount
-        ? "Bấm số để nhập"
+  const hint = !amount
+    ? "Bấm số để nhập · hỗ trợ 50k, 2tr5, 1+2+3"
+    : !inThisMonth
+      ? "Khoản thuộc tháng trước, không tính vào ngân sách tháng này"
+      : mode === "deposit"
+        ? `Sau khoản này ${jar.name} có ${formatVND(after)}`
         : after < 0
           ? `Khoản này làm ${jar.name} vượt ${formatVND(-after)}`
           : `Sau khoản này ${jar.name} còn ${formatVND(after)}`;
   const hintTone =
-    mode === "deposit"
+    mode === "deposit" || !inThisMonth
       ? "var(--color-neutral-700)"
       : amount && after < 0
         ? "var(--color-accent-700)"
@@ -226,10 +262,42 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
         ))}
       </div>
 
+      {visibleSuggestions.length > 0 && (
+        <section aria-label="Gợi ý nhập nhanh">
+          <div className="mb-2 text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Gợi ý — bấm để thêm luôn</div>
+          <div className="flex flex-wrap gap-2">
+            {visibleSuggestions.map((suggestion) => {
+              const target = jarsForEntry.find((j) => j.id === suggestion.jarId)!;
+              const label = suggestion.note || target.name;
+              return (
+                <button
+                  key={`${suggestion.jarId}-${suggestion.amount}-${suggestion.note}`}
+                  type="button"
+                  disabled={saving}
+                  aria-label={`Thêm nhanh ${label} ${formatVND(suggestion.amount)} vào ${target.name}`}
+                  onClick={() => handleQuickAdd(suggestion)}
+                  className="flex items-center gap-2 rounded-full border border-divider bg-surface px-3 py-2 text-left disabled:opacity-60"
+                >
+                  <Icon name={target.icon} className="h-3.5 w-3.5 shrink-0" style={{ color: target.color }} />
+                  <span className="text-[13px] font-semibold">{label}</span>
+                  <span className="text-[13px] tabular-nums">{formatVND(suggestion.amount)}</span>
+                  {suggestion.note && <span className="text-[11px] text-neutral-700">{target.name}</span>}
+                </button>
+              );
+            })}
+          </div>
+          {quickError && (
+            <p role="alert" className="mt-2 text-xs" style={{ color: "var(--color-accent-700)" }}>
+              {quickError}
+            </p>
+          )}
+        </section>
+      )}
+
       <div className="border-b-2 border-text pb-2.5">
         <div className="text-[10px] tracking-[0.12em] text-neutral-700 uppercase">Số tiền</div>
         <div className="mt-1.5 flex items-baseline gap-2">
-          <MoneyInput
+          <CalcMoneyInput
             value={amount}
             onChange={(v) => {
               setAmount(v);
@@ -294,6 +362,11 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
       </div>
 
       <div className="field">
+        <label htmlFor="tx-date">Ngày</label>
+        <input id="tx-date" type="date" className="input" value={date} max={today} onChange={(e) => setDate(e.target.value)} />
+      </div>
+
+      <div className="field">
         <label htmlFor="tx-note">Ghi chú (không bắt buộc)</label>
         <input
           id="tx-note"
@@ -320,7 +393,7 @@ export function TransactionEntry({ jars }: { jars: RealJar[] }) {
         <button type="button" onClick={() => setAmount(0)} className="btn btn-secondary">
           Xoá
         </button>
-        <button type="button" disabled={!amount || saving} onClick={handleSave} className="btn btn-primary flex-1 justify-start">
+        <button type="button" disabled={!amount || !date || saving} onClick={handleSave} className="btn btn-primary flex-1 justify-start">
           {saving
             ? "Đang lưu…"
             : mode === "expense" && jar.isSavings && confirmSavings

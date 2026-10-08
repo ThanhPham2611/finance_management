@@ -58,6 +58,15 @@ describe("ReportsScreen", () => {
     expect(mockBarChart.mock.calls.at(-1)?.[0]).toEqual(expect.objectContaining({ data: expect.any(Array) }));
   });
 
+  it("groups the charts into titled cards and shows the change against the previous period as a chip", async () => {
+    const view = await render(<ReportsScreen />);
+    expect(view.getByRole("header", { name: "Chi tiêu theo thời gian" })).toBeTruthy();
+    expect(view.getByRole("header", { name: "Tỷ trọng theo hũ" })).toBeTruthy();
+    expect(view.getByRole("header", { name: "Giao dịch gần đây" })).toBeTruthy();
+    // Chi tháng này 400k, tháng trước không có → tăng đúng bằng tổng.
+    expect(view.getByText("Tăng 400.000 ₫ so với kỳ trước")).toBeTruthy();
+  });
+
   it("opens active jars and leaves inactive jars non-interactive", async () => {
     const view = await render(<ReportsScreen />);
     // Chỉ xét các dòng tỷ trọng theo hũ (nhãn có "Mở hũ"); danh sách giao dịch gần đây cũng có nút nhưng là mục khác.

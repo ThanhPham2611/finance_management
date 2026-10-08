@@ -20,6 +20,7 @@ export default function MoreScreen() {
 
   const menu: MenuItem[] = [
     { label: "Chia lương", hint: "Phân bổ thu nhập tháng này vào các hũ", icon: "pie-chart", open: go("/allocate") },
+    { label: "Trả nợ", hint: "Trả góp, vay người quen: còn nợ bao nhiêu, mỗi tháng trả bao nhiêu", icon: "payments", open: go("/debts") },
     { label: "Gia đình", hint: "Thành viên, mã mời và các hũ quỹ chung", icon: "groups", open: go("/household") },
     { label: "Chia sẻ chi tiêu", hint: "Cho người tin cậy quyền xem, không quyền sửa", icon: "visibility", open: go("/shared") },
     // Mỗi lần bấm một mã mới để Tổng quan nhận ra là yêu cầu mở lại, kể cả khi vừa xem xong.

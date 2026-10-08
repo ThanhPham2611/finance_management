@@ -16,9 +16,10 @@ export function jarBalanceLabel(jar: Pick<Jar, "monthlyBudget" | "spent" | "isSa
 
 export type EntryHint = { text: string; tone: "default" | "warning" | "danger" };
 
-/** Gợi ý trực tiếp dưới ô số tiền. Cảnh báo vàng khi sau khoản chi hũ còn dưới 15% ngân sách, đỏ khi vượt. */
-export function entryHint(jar: Pick<Jar, "name" | "monthlyBudget" | "spent">, amount: number, type: TransactionType): EntryHint {
-  if (!amount) return { text: "Nhập số tiền", tone: "default" };
+/** Gợi ý trực tiếp dưới ô số tiền. Cảnh báo vàng khi sau khoản chi hũ còn dưới 15% ngân sách, đỏ khi vượt. `inThisMonth=false`: khoản của tháng trước không đụng tới ngân sách tháng này. */
+export function entryHint(jar: Pick<Jar, "name" | "monthlyBudget" | "spent">, amount: number, type: TransactionType, inThisMonth = true): EntryHint {
+  if (!amount) return { text: "Nhập số tiền · hỗ trợ 50k, 2tr5, 1+2+3", tone: "default" };
+  if (!inThisMonth) return { text: "Khoản thuộc tháng trước, không tính vào ngân sách tháng này", tone: "default" };
   const after = balanceAfter(jar, amount, type);
   if (type === "deposit") return { text: `Sau khoản này ${jar.name} có ${vnd(after)}`, tone: "default" };
   if (after < 0) return { text: `Khoản này làm ${jar.name} vượt ${vnd(-after)}`, tone: "danger" };
@@ -27,17 +28,20 @@ export function entryHint(jar: Pick<Jar, "name" | "monthlyBudget" | "spent">, am
 
 export type SavedSummary = { message: string; detail: string; balance: number; warning: string | null };
 
-/** Tóm tắt sau khi lưu. `jar` phải là hũ TRƯỚC khoản giao dịch này (đừng truyền dữ liệu đã tải lại, sẽ bị cộng đôi). */
-export function savedSummary(jar: Jar, amount: number, type: TransactionType, now = vietnamNow()): SavedSummary {
-  const after = balanceAfter(jar, amount, type);
-  const updated: Jar = { ...jar, spent: type === "deposit" ? jar.spent - amount : jar.spent + amount };
+/** Tóm tắt sau khi lưu. `jar` phải là hũ TRƯỚC khoản giao dịch này (đừng truyền dữ liệu đã tải lại, sẽ bị cộng đôi). `inThisMonth=false`: số dư hũ giữ nguyên vì khoản thuộc tháng trước. */
+export function savedSummary(jar: Jar, amount: number, type: TransactionType, now = vietnamNow(), inThisMonth = true): SavedSummary {
+  const effective = inThisMonth ? amount : 0;
+  const after = balanceAfter(jar, effective, type);
+  const updated: Jar = { ...jar, spent: type === "deposit" ? jar.spent - effective : jar.spent + effective };
   const stats = calculateJarStats(updated, now);
-  const detail = jar.isSavings
+  const detail = !inThisMonth
+    ? "Thuộc tháng trước, không tính vào ngân sách tháng này"
+    : jar.isSavings
     ? `Đã tiết kiệm được ${vnd(Math.max(0, after))}`
     : type === "deposit"
       ? `Còn ${vnd(Math.max(0, after))} / ${vnd(jar.monthlyBudget)}`
       : `Đã chi ${vnd(updated.spent)} / ${vnd(jar.monthlyBudget)}`;
-  const warning = jar.isSavings
+  const warning = jar.isSavings || !inThisMonth
     ? null
     : stats.over
       ? `Hũ này đã vượt ngân sách ${vnd(Math.abs(stats.left))}.`

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { JAR_COLORS } from "@hu/domain";
 import { createFamilyJar, createHouseholdInvite, getHouseholdOverview, getMemberLastSpendTimes, getMyHousehold, joinHousehold, memberLabel, nameOf, setContribution, setMemberNickname } from "../src/index";
 import { fakeClient, type Tables } from "./fake-client";
 
@@ -113,10 +114,12 @@ describe("createFamilyJar", () => {
     expect((await createFamilyJar(fakeClient(db()), "nobody", { name: "Ăn chung" })).error?.message).toBe("Cần lập gia đình trước khi tạo hũ gia đình.");
   });
 
-  it("creates a shared jar in the user's household, starting at zero with a drawable color", async () => {
+  it("creates a shared jar in the user's household, starting at zero with a drawable color no other jar uses", async () => {
     const tables = db();
-    expect(await createFamilyJar(fakeClient(tables), "me", { name: " Ăn chung " })).toEqual({ data: undefined, error: null });
-    expect(tables.jars.at(-1)).toMatchObject({ user_id: "me", name: "Ăn chung", is_shared: true, household_id: "h1", monthly_budget: 0, color: "#9A5B13", icon: "home", alert_at_80: true, rollover: false });
+    tables.jars.push(jar("taken", { color: JAR_COLORS[0] }));
+    // Web gửi `var(--color-accent)` (không vẽ được trên mobile): bị bỏ, cấp màu chưa dùng.
+    expect(await createFamilyJar(fakeClient(tables), "me", { name: " Ăn chung ", color: "var(--color-accent)" })).toEqual({ data: undefined, error: null });
+    expect(tables.jars.at(-1)).toMatchObject({ user_id: "me", name: "Ăn chung", is_shared: true, household_id: "h1", monthly_budget: 0, color: JAR_COLORS[1], icon: "home", alert_at_80: true, rollover: false });
   });
 });
 

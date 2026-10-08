@@ -1,5 +1,6 @@
 import React from "react";
 import { fireEvent, render } from "@testing-library/react-native";
+import { JAR_COLORS } from "@hu/domain";
 import { JarForm } from "@/features/finance/jar-form";
 
 describe("JarForm", () => {
@@ -30,5 +31,23 @@ describe("JarForm for a family jar", () => {
     await fireEvent(view.getByLabelText("Hũ tiết kiệm"), "valueChange", true);
     expect(view.getByText(/sẽ luôn được hỏi xác nhận/)).toBeTruthy();
     expect(view.queryByLabelText("Cảnh báo ở 80%")).toBeNull();
+  });
+});
+
+describe("JarForm color picker", () => {
+  const initial = { name: "Nhà ở", monthlyBudget: 5_000_000, icon: "home", color: JAR_COLORS[0], alertAt80: true, rollover: false, isSavings: false };
+
+  it("offers every palette color, marks the current one, and saves the chosen one", async () => {
+    const onSubmit = jest.fn();
+    const view = await render(<JarForm initial={initial} submitLabel="Lưu thay đổi" busy={false} onSubmit={onSubmit} />);
+    expect(view.getAllByRole("radio", { name: /^Màu #/ })).toHaveLength(JAR_COLORS.length);
+    expect(view.getByRole("radio", { name: `Màu ${JAR_COLORS[0]}` }).props.accessibilityState.selected).toBe(true);
+
+    await fireEvent.press(view.getByRole("radio", { name: `Màu ${JAR_COLORS[20]}` }));
+    expect(view.getByRole("radio", { name: `Màu ${JAR_COLORS[20]}` }).props.accessibilityState.selected).toBe(true);
+    expect(view.getByRole("radio", { name: `Màu ${JAR_COLORS[0]}` }).props.accessibilityState.selected).toBe(false);
+
+    await fireEvent.press(view.getByText("Lưu thay đổi"));
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ name: "Nhà ở", color: JAR_COLORS[20] }));
   });
 });

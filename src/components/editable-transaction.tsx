@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Icon } from "@/components/icon";
-import { Banner, MoneyInput } from "@/components/ui";
+import { Segmented } from "@/components/segmented";
+import { Banner } from "@/components/ui";
+import { CalcMoneyInput } from "@/components/calc-money-input";
 import { jarLabel, type RealJar } from "@/lib/queries/jars";
 import { deleteTransaction, updateTransaction } from "@/app/(app)/transactions/actions";
 
@@ -44,7 +46,7 @@ export function EditableTransaction({
       <button
         type="button"
         onClick={() => setEditing(true)}
-        className="block w-full text-left transition-colors hover:bg-surface"
+        className="block w-full text-left transition-colors hover:bg-neutral-100"
         aria-label="Sửa giao dịch"
       >
         {children}
@@ -85,28 +87,18 @@ export function EditableTransaction({
 
   return (
     <div className="flex flex-col gap-2 border-t border-divider bg-surface px-3 py-3">
-      <div className="flex h-11 gap-px border border-divider bg-divider">
-        {(
-          [
-            ["expense", "Chi"],
-            ["deposit", "Thu"],
-          ] as const
-        ).map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            aria-pressed={type === id}
-            onClick={() => {
-              setType(id);
-              setConfirmSavings(false);
-            }}
-            className="flex flex-1 items-center justify-center text-sm"
-            style={{ background: type === id ? "var(--color-primary)" : "var(--color-bg)", color: type === id ? "var(--color-on-primary)" : "var(--color-text)" }}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Loại giao dịch"
+        options={[
+          { id: "expense", label: "Chi" },
+          { id: "deposit", label: "Thu" },
+        ]}
+        value={type}
+        onChange={(id) => {
+          setType(id);
+          setConfirmSavings(false);
+        }}
+      />
       <div className="flex flex-col gap-2 sm:flex-row">
         <select
           className="input min-w-0 flex-1"
@@ -126,7 +118,7 @@ export function EditableTransaction({
         <input type="date" className="input w-full sm:w-44" aria-label="Ngày" value={date} onChange={(e) => setDate(e.target.value)} />
       </div>
       <div className="flex flex-col gap-2 sm:flex-row">
-        <MoneyInput value={amount} onChange={setAmount} className="input min-w-0 flex-1" aria-label="Số tiền" />
+        <CalcMoneyInput value={amount} onChange={setAmount} className="input w-full" aria-label="Số tiền" />
         <input className="input min-w-0 flex-1" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Ghi chú" aria-label="Ghi chú" />
       </div>
       {type === "expense" && jars.find((j) => j.id === jarId)?.isSavings && confirmSavings && (

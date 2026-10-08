@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { buildJarPatch, createTransaction, listTransactionsForJar, mapJarsWithSpent, mapTransactionWithJar, normalizeJarForWrite } from "../src/index";
+import { JAR_COLORS } from "@hu/domain";
+import { fakeClient } from "./fake-client";
+import { buildJarPatch, createJars, createTransaction, listTransactionsForJar, mapJarsWithSpent, mapTransactionWithJar, normalizeJarForWrite } from "../src/index";
 
 const USER_ID = "22222222-2222-4222-8222-222222222222";
 const JAR_ID = "11111111-1111-4111-8111-111111111111";
@@ -139,5 +141,25 @@ describe("listTransactionsForJar", () => {
     for (const name of ["select", "eq", "order"]) chain[name] = () => chain;
     chain.limit = async () => ({ data: null, error: new Error("boom") });
     await expect(listTransactionsForJar({ from: () => chain } as never, JAR_ID)).rejects.toThrow("boom");
+  });
+});
+
+describe("createJars colors", () => {
+  const input = (name: string, color?: string) => ({ name, monthlyBudget: 1_000_000, icon: "wallet", ...(color ? { color } : {}) });
+
+  it("gives every new jar its own color: keeps a free one, replaces taken or missing ones", async () => {
+    const tables = { jars: [{ id: "old", color: JAR_COLORS[0], is_active: true }] };
+    const result = await createJars(fakeClient(tables), [input("A", JAR_COLORS[0]), input("B", JAR_COLORS[5]), input("C"), input("D")], USER_ID);
+
+    expect(result).toEqual({ data: undefined, error: null });
+    const colors = tables.jars.slice(1).map((row) => row.color);
+    expect(colors[1]).toBe(JAR_COLORS[5]);
+    expect(new Set([JAR_COLORS[0], ...colors]).size).toBe(5);
+  });
+
+  it("does not hand out a color that an inactive jar used", async () => {
+    const tables = { jars: [{ id: "gone", color: JAR_COLORS[0], is_active: false }] };
+    await createJars(fakeClient(tables), [input("A")], USER_ID);
+    expect(tables.jars[1]?.color).toBe(JAR_COLORS[0]);
   });
 });

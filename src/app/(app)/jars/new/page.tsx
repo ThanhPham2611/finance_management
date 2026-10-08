@@ -73,7 +73,8 @@ export default function NewJarPage() {
       drafts.map((d) => ({
         name: d.name || "Hũ mới",
         icon: d.icon,
-        color: presetColor(d.presetName, d.hue),
+        // Hu tu dat ten khong co mau rieng: bo trong de createJars cap mau chua dung.
+        color: d.presetName ? presetColor(d.presetName, d.hue) : undefined,
         monthlyBudget: d.budget,
         alertAt80,
         rollover,

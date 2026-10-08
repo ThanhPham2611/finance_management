@@ -3,16 +3,18 @@ import { router, useLocalSearchParams } from "expo-router";
 import { MaterialIcons } from "@expo/vector-icons";
 import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
 import { previousMonthLabel } from "@hu/data";
-import { calculateJarStats, formatMoney, vietnamNow } from "@hu/domain";
+import { budgetShare, calculateJarStats, calculateSpendingPace, formatMoney, vietnamNow, vietnamToday, withDistinctJarColors } from "@hu/domain";
 import { lightColors, radii, spacing, typography } from "@hu/design-tokens";
 import { Amount, EmptyState, ErrorState, PageTitle, Surface, TextButton } from "@/components/finance-ui";
 import { LoadingScreen, Screen } from "@/components/screen";
-import { useAutoRollover, useJars, useMarkTourSeen, usePendingLeftovers, useProfile, useRecentTransactions, useResolveLeftovers, useTransactionsSince } from "@/features/finance/hooks";
+import { DebtsOverviewCard } from "@/features/debts/debts-overview-card";
+import { useAutoRollover, useDebts, useJars, useMarkTourSeen, usePendingLeftovers, useProfile, useRecentTransactions, useResolveLeftovers, useTransactionsSince } from "@/features/finance/hooks";
 import { daysLeftInMonth } from "@/features/finance/jar-stats";
 import { buildOverviewSummary, jarLabel } from "@/features/finance/model";
 import { LeftoverBanner } from "@/features/overview/leftover-banner";
 import { overviewAlert, weekSpend, weekStart } from "@/features/overview/model";
 import { BudgetSplitChart, WeekTrendChart } from "@/features/overview/overview-charts";
+import { SpendingPaceCard } from "@/features/overview/spending-pace-card";
 import { ProductTour } from "@/features/tour/product-tour";
 
 const vnd = (value: number) => `${formatMoney(value)} ₫`;
@@ -24,6 +26,8 @@ export default function OverviewScreen() {
   const recent = useRecentTransactions(4);
   const last7 = useTransactionsSince(weekStart(now));
   const leftovers = usePendingLeftovers();
+  // Khoản nợ là tính năng phụ: không chờ và không làm hỏng Tổng quan khi chưa chạy migration 013.
+  const debts = useDebts();
   const resolve = useResolveLeftovers();
   // Hướng dẫn: tự mở lần đầu (chưa xem), hoặc mở lại từ tab Thêm qua ?tour=<mã> (mỗi lần bấm một mã mới). Chỉ lần đầu mới ghi "đã xem".
   const params = useLocalSearchParams<{ tour?: string }>();
@@ -48,11 +52,14 @@ export default function OverviewScreen() {
   const failed = queries.find((query) => query.error);
   if (failed?.error) return <Screen><ErrorState message={failed.error.message} retry={() => void refetchAll()} /></Screen>;
 
-  const jarList = jars.data ?? [];
+  // Hũ cũ có thể trùng màu (hũ tùy chỉnh trước đây đều nhận cùng một màu): chỉ đổi màu lúc hiển thị để biểu đồ tách được từng hũ.
+  const jarList = withDistinctJarColors(jars.data ?? []);
   const summary = buildOverviewSummary(jarList);
   const spendable = jarList.filter((jar) => !jar.isSavings);
   const week = weekSpend(last7.data ?? [], now);
   const alert = overviewAlert(jarList, now);
+  // Tỉ trọng tính trên tổng ngân sách MỌI hũ (kể cả hũ tiết kiệm), cùng quy tắc với web.
+  const allBudget = jarList.reduce((sum, jar) => sum + jar.monthlyBudget, 0);
   const pending = leftovers.data ?? [];
   return (
     <Screen refreshControl={<RefreshControl refreshing={queries.some((query) => query.isRefetching)} onRefresh={() => void refetchAll()} tintColor={lightColors.primary} />}>
@@ -72,6 +79,8 @@ export default function OverviewScreen() {
             </View>
             <BudgetSplitChart jars={spendable} budgetSum={summary.budget} />
           </Surface>
+          <SpendingPaceCard pace={calculateSpendingPace(jarList, now)} />
+          <DebtsOverviewCard debts={debts.data ?? []} today={vietnamToday()} />
           {summary.savingsJarCount > 0 ? (
             <Surface style={styles.saving}><Text style={styles.savingLabel}>{`Đang dành cho tương lai · ${summary.savingsJarCount} hũ`}</Text><Text style={styles.savingValue}>{vnd(Math.max(0, summary.saved))}</Text></Surface>
           ) : null}
@@ -84,7 +93,7 @@ export default function OverviewScreen() {
             return (
               <Pressable key={jar.id} accessibilityRole="button" onPress={() => router.push({ pathname: "/jars/[id]", params: { id: jar.id } })} style={({ pressed }) => pressed && styles.pressed}>
                 <Surface style={styles.jarCard}>
-                  <View style={styles.jarTop}><View style={[styles.jarDot, { backgroundColor: jar.color }]} /><Text numberOfLines={1} style={styles.jarName}>{jarLabel(jar)}</Text><Text style={[styles.jarLeft, stats.over && !jar.isSavings && styles.danger]}>{jar.isSavings ? `Đã tiết kiệm ${vnd(Math.max(0, stats.left))}` : stats.over ? `Vượt ${vnd(-stats.left)}` : `Còn ${vnd(stats.left)}`}</Text></View>
+                  <View style={styles.jarTop}><View style={[styles.jarDot, { backgroundColor: jar.color }]} /><Text numberOfLines={1} style={styles.jarName}>{jarLabel(jar)}</Text><Text accessibilityLabel={`Chiếm ${budgetShare(jar, allBudget)}% tổng ngân sách các hũ`} style={styles.share}>{`${budgetShare(jar, allBudget)}% tổng`}</Text><Text style={[styles.jarLeft, stats.over && !jar.isSavings && styles.danger]}>{jar.isSavings ? `Đã tiết kiệm ${vnd(Math.max(0, stats.left))}` : stats.over ? `Vượt ${vnd(-stats.left)}` : `Còn ${vnd(stats.left)}`}</Text></View>
                   <View style={styles.track}><View style={[styles.fill, { width: `${stats.pct}%`, backgroundColor: !jar.isSavings && stats.over ? lightColors.destructive : stats.near || stats.willExceed ? lightColors.warning : jar.color }]} /></View>
                 </Surface>
               </Pressable>
@@ -131,6 +140,7 @@ const styles = StyleSheet.create({
   jarDot: { width: 12, height: 12, borderRadius: 6 },
   jarName: { flex: 1, color: lightColors.text, fontSize: typography.size.body, fontWeight: "700" },
   jarLeft: { color: lightColors.textMuted, fontSize: typography.size.caption, fontWeight: "600", fontVariant: ["tabular-nums"] },
+  share: { color: lightColors.textMuted, fontSize: 11, fontVariant: ["tabular-nums"] },
   danger: { color: lightColors.destructive },
   track: { height: 7, overflow: "hidden", borderRadius: radii.pill, backgroundColor: lightColors.surfaceSubtle },
   fill: { height: "100%", borderRadius: radii.pill },

@@ -24,7 +24,7 @@ describe("balanceAfter / jarBalanceLabel", () => {
 
 describe("entryHint", () => {
   it("asks for an amount first", () => {
-    expect(entryHint(jar(), 0, "expense")).toEqual({ text: "Nhập số tiền", tone: "default" });
+    expect(entryHint(jar(), 0, "expense")).toEqual({ text: "Nhập số tiền · hỗ trợ 50k, 2tr5, 1+2+3", tone: "default" });
   });
 
   it("shows what is left, with a warning below 15% of budget", () => {
@@ -38,6 +38,18 @@ describe("entryHint", () => {
 
   it("deposit states the new balance and never warns", () => {
     expect(entryHint(jar(), 50_000, "deposit")).toEqual({ text: "Sau khoản này Ăn uống có 650.000 ₫", tone: "default" });
+  });
+});
+
+describe("last-month transactions", () => {
+  it("hint says the budget is untouched", () => {
+    expect(entryHint(jar(), 100_000, "expense", false)).toEqual({ text: "Khoản thuộc tháng trước, không tính vào ngân sách tháng này", tone: "default" });
+    expect(entryHint(jar(), 0, "expense", false).text).toBe("Nhập số tiền · hỗ trợ 50k, 2tr5, 1+2+3");
+  });
+
+  it("summary keeps the jar balance and never warns", () => {
+    const s = savedSummary(jar({ spent: 950_000 }), 500_000, "expense", day10, false);
+    expect(s).toEqual({ message: "Đã lưu 500.000 ₫ vào Ăn uống", detail: "Thuộc tháng trước, không tính vào ngân sách tháng này", balance: 50_000, warning: null });
   });
 });
 

@@ -7,10 +7,10 @@ describe("responsive information architecture", () => {
   });
 
   it("moves secondary finance and account destinations into More", () => {
-    expect(moreNavigation.map((item) => item.href)).toEqual(["/allocate", "/household", "/shared", "/more#account"]);
+    expect(moreNavigation.map((item) => item.href)).toEqual(["/allocate", "/debts", "/household", "/shared", "/more#account"]);
   });
 
   it("keeps every product destination visible on desktop", () => {
-    expect(desktopNavigation.map((item) => item.href)).toEqual(["/", "/jars", "/transactions", "/allocate", "/reports", "/household", "/shared"]);
+    expect(desktopNavigation.map((item) => item.href)).toEqual(["/", "/jars", "/transactions", "/allocate", "/debts", "/reports", "/household", "/shared"]);
   });
 });

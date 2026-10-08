@@ -1,4 +1,5 @@
 export * from "./allocation";
+export * from "./debts";
 export * from "./household";
 export * from "./jars";
 export * from "./leftover";

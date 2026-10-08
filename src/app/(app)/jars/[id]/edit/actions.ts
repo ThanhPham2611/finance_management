@@ -12,6 +12,8 @@ export type UpdateJarInput = {
   jarId: string;
   name: string;
   monthlyBudget: number;
+  /** `#RRGGBB`; bỏ trống thì giữ màu hiện tại. */
+  color?: string;
   alertAt80: boolean;
   rollover: boolean;
   isSavings: boolean;

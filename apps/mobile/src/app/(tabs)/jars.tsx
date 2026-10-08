@@ -1,7 +1,7 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { Pressable, RefreshControl, StyleSheet, Text, View } from "react-native";
-import { calculateJarStats, formatMoney, vietnamNow } from "@hu/domain";
+import { budgetShare, calculateJarStats, formatMoney, vietnamNow } from "@hu/domain";
 import { lightColors, radii, spacing, typography } from "@hu/design-tokens";
 import { EmptyState, ErrorState, PageTitle, Surface, TextButton } from "@/components/finance-ui";
 import { JarIcon } from "@/components/jar-icon";
@@ -29,6 +29,7 @@ export default function JarsScreen() {
               {overview.shares.map((segment) => <View key={segment.id} style={{ width: `${segment.share}%`, backgroundColor: segment.color }} />)}
             </View>
             <Text style={styles.meta}>{`${jars.length} hũ · Cần chú ý ${overview.needsAttention}`}</Text>
+            <Text style={styles.meta}>{`Tỉ trọng mỗi hũ tính trên tổng ${formatMoney(overview.allBudget)} ₫ ngân sách của tất cả hũ (kể cả hũ tiết kiệm).`}</Text>
           </View>
           {jars.map((jar) => {
             const stats = calculateJarStats(jar, now);
@@ -41,6 +42,7 @@ export default function JarsScreen() {
                       <Text style={styles.name}>{jar.name}</Text>
                       {jar.isShared ? <Text style={styles.badge}>GIA ĐÌNH</Text> : null}
                       {jar.isSavings ? <Text style={styles.badge}>TIẾT KIỆM</Text> : null}
+                      <Text accessibilityLabel={`Chiếm ${budgetShare(jar, overview.allBudget)}% tổng ngân sách các hũ`} style={styles.share}>{`${budgetShare(jar, overview.allBudget)}% tổng`}</Text>
                     </View>
                     <Text style={[styles.detail, stats.over && styles.over]}>{jar.isSavings && !stats.over ? `Đã tiết kiệm ${formatMoney(Math.abs(stats.left))} ₫` : stats.over ? `Đã vượt ${formatMoney(-stats.left)} ₫` : `Còn ${formatMoney(stats.left)} ₫`}</Text>
                     <View style={styles.progressRow}>
@@ -73,6 +75,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", flexWrap: "wrap", gap: spacing[2] },
   name: { flexShrink: 1, color: lightColors.text, fontSize: typography.size.bodyLarge, fontWeight: "800" },
   badge: { color: lightColors.accent, backgroundColor: "#F4E9D8", borderRadius: radii.pill, paddingHorizontal: spacing[2], paddingVertical: 3, fontSize: 10, fontWeight: "800", letterSpacing: 0.6 },
+  share: { color: lightColors.textMuted, fontSize: 11, fontVariant: ["tabular-nums"] },
   detail: { color: lightColors.textMuted, fontSize: typography.size.caption },
   over: { color: lightColors.destructive },
   progressRow: { flexDirection: "row", alignItems: "center", gap: spacing[2] },
